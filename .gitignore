@@ -1,0 +1,30 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio / VS Code / JetBrains
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.dbmdl
+
+## Compiled executables & packaging outputs
+dist/
+publish/
+
+## SQLite Local Databases & Runtime Cache
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+Data/
+
+## Runtime User Config
+AppConfig.json

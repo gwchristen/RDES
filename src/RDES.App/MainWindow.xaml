@@ -1,0 +1,187 @@
+<Window x:Class="RDES.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:RDES.App.Views"
+        xmlns:viewmodels="clr-namespace:RDES.App.ViewModels"
+        mc:Ignorable="d"
+        Title="RDES - Portable Device Entry System" 
+        Height="800" Width="1180"
+        MinHeight="650" MinWidth="950"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BackgroundBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Top Header & Navigation -->
+            <RowDefinition Height="*"/>    <!-- Main View Content -->
+            <RowDefinition Height="Auto"/> <!-- Bottom Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Top Header & Navigation -->
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="20,12,20,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: App Title & User / DB Badges -->
+                <DockPanel Grid.Row="0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                        <!-- App Icon Badge -->
+                        <Border Background="{DynamicResource PrimaryBrush}" CornerRadius="6" Width="36" Height="36" Margin="0,0,12,0">
+                            <TextBlock Text="⚡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="RDES" FontSize="20" FontWeight="ExtraBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Device Entry &amp; Audit Management" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,-2,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Right Badges -->
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                        <!-- Theme Toggle Button -->
+                        <Button Style="{StaticResource SecondaryButton}" 
+                                Command="{Binding ToggleThemeCommand}" 
+                                Padding="10,4" 
+                                Margin="0,0,10,0"
+                                ToolTip="Toggle Light / Dark Mode">
+                            <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="🌙 Dark Mode"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDarkMode}" Value="True">
+                                                <Setter Property="Text" Value="☀️ Light Mode"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+
+                        <!-- Connection Status Pill -->
+                        <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="10,4" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Margin="0,0,6,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="#EF4444"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDatabaseConnected}" Value="True">
+                                                    <Setter Property="Fill" Value="#10B981"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding ConnectionStatusText}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- User Badge -->
+                        <Border Background="#203B82F6" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="16" Padding="12,4" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="👤 " FontSize="12"/>
+                                <TextBlock Text="{Binding CurrentUserName}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource PrimaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Machine Badge -->
+                        <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="10,4">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="💻 " FontSize="12"/>
+                                <TextBlock Text="{Binding CurrentMachineName}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Row 2: Navigation Pill Tabs -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal">
+                    <RadioButton Content="📝  Data Entry" 
+                                 Style="{StaticResource NavTabButton}" 
+                                 IsChecked="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0, Mode=OneWay}"
+                                 Command="{Binding NavigateToCommand}"
+                                 CommandParameter="0"
+                                 GroupName="NavTabs"/>
+
+                    <RadioButton Content="📋  Device Records" 
+                                 Style="{StaticResource NavTabButton}" 
+                                 IsChecked="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1, Mode=OneWay}"
+                                 Command="{Binding NavigateToCommand}"
+                                 CommandParameter="1"
+                                 GroupName="NavTabs"/>
+
+                    <RadioButton Content="📊  Statistics" 
+                                 Style="{StaticResource NavTabButton}" 
+                                 IsChecked="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2, Mode=OneWay}"
+                                 Command="{Binding NavigateToCommand}"
+                                 CommandParameter="2"
+                                 GroupName="NavTabs"/>
+
+                    <RadioButton Content="📥  Bulk Import" 
+                                 Style="{StaticResource NavTabButton}" 
+                                 IsChecked="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=3, Mode=OneWay}"
+                                 Command="{Binding NavigateToCommand}"
+                                 CommandParameter="3"
+                                 GroupName="NavTabs"/>
+
+                    <RadioButton Content="⚙️  Settings &amp; Shared DB" 
+                                 Style="{StaticResource NavTabButton}" 
+                                 IsChecked="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=4, Mode=OneWay}"
+                                 Command="{Binding NavigateToCommand}"
+                                 CommandParameter="4"
+                                 GroupName="NavTabs"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area with ViewModel DataTemplates -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}">
+            <ContentControl.Resources>
+                <DataTemplate DataType="{x:Type viewmodels:EntryViewModel}">
+                    <views:EntryView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:RecordsViewModel}">
+                    <views:RecordsView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:StatisticsViewModel}">
+                    <views:StatisticsView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:BulkImportViewModel}">
+                    <views:BulkImportView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:SettingsViewModel}">
+                    <views:SettingsView />
+                </DataTemplate>
+            </ContentControl.Resources>
+        </ContentControl>
+
+        <!-- Bottom Status Bar -->
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,8">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <TextBlock Text="📁 Database: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding DatabasePath}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" FontSize="12" ToolTip="{Binding DatabasePath}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                    <TextBlock Text="Total Devices: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding TotalDatabaseRecords}" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" FontSize="12" Margin="0,0,16,0"/>
+
+                    <TextBlock Text="Added Today: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding TodayRecordsCount}" FontWeight="Bold" Foreground="{DynamicResource SuccessBrush}" FontSize="12" Margin="0,0,16,0"/>
+
+                    <TextBlock Text="Pending RMA: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                    <TextBlock Text="{Binding PendingRecordsCount}" FontWeight="Bold" Foreground="{DynamicResource WarningBrush}" FontSize="12" Margin="0,0,16,0"/>
+
+                    <TextBlock Text="v1.0.0 (Portable)" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="8,0,0,0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

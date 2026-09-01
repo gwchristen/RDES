@@ -1,0 +1,271 @@
+<UserControl x:Class="RDES.App.Views.EntryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="750" d:DesignWidth="1000">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Alerts / Banners -->
+                <RowDefinition Height="Auto"/> <!-- Main Form Card -->
+                <RowDefinition Height="20"/>   <!-- Spacing -->
+                <RowDefinition Height="*"/>    <!-- Recent Entries Card -->
+            </Grid.RowDefinitions>
+
+            <!-- Alerts and Banners -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                <!-- Status Message Banner -->
+                <Border Background="{DynamicResource SuccessBrush}" 
+                        CornerRadius="6" 
+                        Padding="12,10" 
+                        Margin="0,0,0,8"
+                        Visibility="{Binding StatusMessage, Converter={StaticResource StringNotEmptyToVisConverter}}">
+                    <Grid>
+                        <TextBlock Text="{Binding StatusMessage}" 
+                                   Foreground="White" 
+                                   FontWeight="SemiBold" 
+                                   FontSize="13" 
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Barcode Auto-Split Info Banner -->
+                <Border Background="#2016A34A" 
+                        BorderBrush="{DynamicResource SuccessBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="6" 
+                        Padding="12,8" 
+                        Margin="0,0,0,8"
+                        Visibility="{Binding BarcodeDeconstructedInfo, Converter={StaticResource StringNotEmptyToVisConverter}}">
+                    <TextBlock Text="{Binding BarcodeDeconstructedInfo}" 
+                               Foreground="{DynamicResource SuccessBrush}" 
+                               FontWeight="SemiBold" 
+                               FontSize="12"/>
+                </Border>
+
+                <!-- Duplicate Warning Banner -->
+                <Border Background="#20D97706" 
+                        BorderBrush="{DynamicResource WarningBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="6" 
+                        Padding="12,10"
+                        Visibility="{Binding HasDuplicateWarning, Converter={StaticResource BoolToVisConverter}}">
+                    <DockPanel>
+                        <Button Content="Load Existing Record" 
+                                DockPanel.Dock="Right" 
+                                Style="{StaticResource SecondaryButton}" 
+                                Padding="10,4" 
+                                FontSize="12"
+                                Command="{Binding LoadExistingDuplicateCommand}"/>
+                        <TextBlock Text="{Binding DuplicateWarning}" 
+                                   Foreground="{DynamicResource WarningBrush}" 
+                                   FontWeight="SemiBold" 
+                                   FontSize="13" 
+                                   VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Main Form Card -->
+            <Border Grid.Row="1" Style="{StaticResource CardPanel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Card Header -->
+                        <RowDefinition Height="Auto"/> <!-- Form Grid -->
+                        <RowDefinition Height="Auto"/> <!-- Form Actions -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Card Header -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <TextBlock Text="Device Data Entry" 
+                                       FontSize="18" 
+                                       FontWeight="Bold" 
+                                       Foreground="{DynamicResource TextPrimaryBrush}" 
+                                       VerticalAlignment="Center"/>
+                            <Border Margin="12,0,0,0" 
+                                    Background="#203B82F6" 
+                                    BorderBrush="{DynamicResource PrimaryBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4" 
+                                    Padding="8,2" 
+                                    VerticalAlignment="Center"
+                                    Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVisConverter}}">
+                                <TextBlock Text="✏️ EDITING EXISTING RECORD" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource PrimaryBrush}"/>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <TextBlock Text="Auto-User: " Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ActiveUserName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Form Controls Grid -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Row 0: Serial Number, Module Number, Defect -->
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,14">
+                            <TextBlock Text="Serial Number *" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TxtSerialNumber" 
+                                     Text="{Binding SerialNumber, UpdateSourceTrigger=PropertyChanged}" 
+                                     FontSize="15" 
+                                     FontWeight="Bold"
+                                     Height="36"
+                                     KeyDown="TxtSerialNumber_KeyDown"/>
+                            <TextBlock Text="Press Enter to save directly" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,14">
+                            <TextBlock Text="Module # / MAC" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding ModuleNumber, UpdateSourceTrigger=PropertyChanged}" 
+                                     FontSize="14" 
+                                     Height="36"
+                                     KeyDown="TxtFormField_KeyDown"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="4" Margin="0,0,0,14">
+                            <TextBlock Text="Defect / Problem *" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <ComboBox ItemsSource="{Binding DefectList}" 
+                                      SelectedItem="{Binding SelectedDefect}" 
+                                      Height="36" 
+                                      FontSize="13" 
+                                      IsEditable="True"
+                                      VerticalContentAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Row 1: OpCo, Device Code, Manufacturer Code -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,14">
+                            <TextBlock Text="OpCo (Operating Company) *" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,5"/>
+                            <ComboBox ItemsSource="{Binding OpCoList}" 
+                                      SelectedItem="{Binding SelectedOpCo}" 
+                                      Height="34" 
+                                      FontSize="13" 
+                                      FontWeight="SemiBold"
+                                      VerticalContentAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,14">
+                            <TextBlock Text="Device Code (DEV CD)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding DeviceCode, UpdateSourceTrigger=PropertyChanged}" 
+                                     Height="34"
+                                     KeyDown="TxtFormField_KeyDown"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="4" Margin="0,0,0,14">
+                            <TextBlock Text="Manufacturer Code (MFR CD)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding ManufacturerCode, UpdateSourceTrigger=PropertyChanged}" 
+                                     Height="34"
+                                     KeyDown="TxtFormField_KeyDown"/>
+                        </StackPanel>
+
+                        <!-- Row 2: Catalog/Part #, Customer Input, Custom Defect -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,14">
+                            <TextBlock Text="Catalog / Part #" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding Catalog, UpdateSourceTrigger=PropertyChanged}" 
+                                     Height="34" 
+                                     KeyDown="TxtFormField_KeyDown"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,14">
+                            <TextBlock Text="Customer Input (30 chars)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding CustomerInput, UpdateSourceTrigger=PropertyChanged}" 
+                                     MaxLength="30" 
+                                     Height="34" 
+                                     KeyDown="TxtFormField_KeyDown"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.Column="4" Margin="0,0,0,14">
+                            <TextBlock Text="Custom Defect Description (Optional)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding CustomDefect, UpdateSourceTrigger=PropertyChanged}" 
+                                     Height="34"
+                                     KeyDown="TxtFormField_KeyDown"/>
+                        </StackPanel>
+
+                        <!-- Row 3: Notes (Span across full width) -->
+                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,0,0,14">
+                            <TextBlock Text="Notes / Remarks" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" 
+                                     Height="34" 
+                                     TextWrapping="NoWrap" 
+                                     VerticalContentAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Form Action Buttons -->
+                    <DockPanel Grid.Row="2" Margin="0,10,0,0">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <Button Content="Clear / Reset Form (Ctrl+N)" 
+                                    Style="{StaticResource SecondaryButton}" 
+                                    Command="{Binding ClearFormCommand}" 
+                                    Margin="0,0,10,0"/>
+                            <Button Content="💾 Save Record (Enter / Ctrl+S)" 
+                                    Style="{StaticResource PrimaryButton}" 
+                                    Command="{Binding SaveCommand}" 
+                                    MinWidth="160"
+                                    Height="38"
+                                    FontSize="14"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </Border>
+
+            <!-- Recent Entries Card -->
+            <Border Grid.Row="3" Style="{StaticResource CardPanel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                        <TextBlock Text="Recent Entries (Live Session Feed)" 
+                                   FontWeight="Bold" 
+                                   FontSize="15" 
+                                   Foreground="{DynamicResource TextPrimaryBrush}" 
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="Click any row to edit" 
+                                   Foreground="{DynamicResource TextSecondaryBrush}" 
+                                   FontSize="12" 
+                                   DockPanel.Dock="Right" 
+                                   VerticalAlignment="Center"/>
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="1" 
+                              ItemsSource="{Binding RecentEntries}" 
+                              MaxHeight="260"
+                              MouseDoubleClick="RecentEntries_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                            <DataGridTextColumn Header="OpCo" Binding="{Binding OpCo}" FontWeight="SemiBold" Width="110"/>
+                            <DataGridTextColumn Header="Serial #" Binding="{Binding SerialNumber}" FontWeight="Bold" Width="130"/>
+                            <DataGridTextColumn Header="Module #" Binding="{Binding ModuleNumber}" Width="150"/>
+                            <DataGridTextColumn Header="Defect" Binding="{Binding Defect}" Width="180"/>
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90"/>
+                            <DataGridTextColumn Header="Entered By" Binding="{Binding CreatedBy}" Width="100"/>
+                            <DataGridTextColumn Header="Time" Binding="{Binding CreatedAt, StringFormat='{}{0:HH:mm:ss}'}" Width="80"/>
+                            <DataGridTextColumn Header="Device Code" Binding="{Binding DeviceCode}" Width="90"/>
+                            <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

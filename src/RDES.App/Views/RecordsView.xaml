@@ -1,0 +1,311 @@
+<UserControl x:Class="RDES.App.Views.RecordsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="750" d:DesignWidth="1100">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Filters Card -->
+            <RowDefinition Height="12"/>   <!-- Spacing -->
+            <RowDefinition Height="Auto"/> <!-- Action & Export Toolbar -->
+            <RowDefinition Height="12"/>   <!-- Spacing -->
+            <RowDefinition Height="*"/>    <!-- DataGrid Card -->
+            <RowDefinition Height="Auto"/> <!-- Status Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Search & Filter Controls Card -->
+        <Border Grid.Row="0" Style="{StaticResource CardPanel}" Padding="16,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: OpCo Quick Filter Pills -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <TextBlock Text="OpCo Filter:" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ListBox ItemsSource="{Binding OpCoFilterList}" 
+                             SelectedValue="{Binding SelectedOpCo, Mode=TwoWay}" 
+                             SelectionChanged="Filter_SelectionChanged"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Border" 
+                                                    Background="{DynamicResource SurfaceBrush}" 
+                                                    BorderBrush="{DynamicResource BorderBrush}" 
+                                                    BorderThickness="1" 
+                                                    CornerRadius="6" 
+                                                    Padding="14,6" 
+                                                    Margin="0,0,6,0" 
+                                                    Cursor="Hand">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                                    <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                </Trigger>
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="IsMouseOver" Value="True"/>
+                                                        <Condition Property="IsSelected" Value="False"/>
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter TargetName="Border" Property="Background" Value="#80808020"/>
+                                                </MultiTrigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+                </DockPanel>
+
+                <!-- Row 1: Search & Dropdown Filters -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="1.1*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="1.4*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Search Box -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Search (Serial, Module, Defect, Notes)" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
+                                 Height="34" 
+                                 KeyDown="SearchBox_KeyDown"/>
+                    </StackPanel>
+
+                    <!-- Status Filter -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Status Filter" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding StatusFilterList}" 
+                                  SelectedItem="{Binding SelectedStatus}" 
+                                  Height="34"
+                                  FontWeight="SemiBold"
+                                  SelectionChanged="Filter_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- Defect Filter -->
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Text="Defect Filter" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding DefectFilterList}" 
+                                  SelectedItem="{Binding SelectedDefect}" 
+                                  Height="34"
+                                  SelectionChanged="Filter_SelectionChanged"/>
+                    </StackPanel>
+
+                    <!-- Search & Reset Buttons -->
+                    <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Bottom">
+                        <Button Content="🔍 Search" 
+                                Style="{StaticResource PrimaryButton}" 
+                                Command="{Binding SearchCommand}" 
+                                Height="34" 
+                                Padding="14,0" 
+                                Margin="0,0,6,0"/>
+                        <Button Content="Reset" 
+                                Style="{StaticResource SecondaryButton}" 
+                                Command="{Binding ResetFiltersCommand}" 
+                                Height="34" 
+                                Padding="10,0"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Row 2: Quick Date Presets & Record Count -->
+                <DockPanel Grid.Row="2" Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Quick Date Filters: " Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="Today" Style="{StaticResource SecondaryButton}" Command="{Binding FilterTodayCommand}" Padding="8,3" FontSize="11" Margin="0,0,6,0"/>
+                        <Button Content="This Week" Style="{StaticResource SecondaryButton}" Command="{Binding FilterThisWeekCommand}" Padding="8,3" FontSize="11" Margin="0,0,6,0"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <TextBlock Text="Showing: " Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding FilteredRecordsCount}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text=" of " Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding TotalRecordsCount}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text=" total records in database" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+        </Border>
+
+        <!-- Action & Export Toolbar Card -->
+        <Border Grid.Row="2" Style="{StaticResource CardPanel}" Padding="12,10">
+            <DockPanel>
+                <!-- Left: Multi-Selection & Batch Actions -->
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <Button Content="☑️ Select All" 
+                            Style="{StaticResource SecondaryButton}" 
+                            Command="{Binding SelectAllCommand}" 
+                            Padding="8,5" 
+                            Margin="0,0,4,0"
+                            ToolTip="Select all visible records in list"/>
+                    <Button Content="⏹️ Clear" 
+                            Style="{StaticResource SecondaryButton}" 
+                            Command="{Binding DeselectAllCommand}" 
+                            Padding="8,5" 
+                            Margin="0,0,8,0"
+                            ToolTip="Deselect all records"/>
+
+                    <!-- Selected Count Badge -->
+                    <Border Background="#203B82F6" 
+                            BorderBrush="{DynamicResource PrimaryBrush}" 
+                            BorderThickness="1" 
+                            CornerRadius="12" 
+                            Padding="8,3" 
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SelectedItemsCount, StringFormat='{}{0} Selected'}" 
+                                   FontWeight="Bold" 
+                                   FontSize="11" 
+                                   Foreground="{DynamicResource PrimaryBrush}"/>
+                    </Border>
+
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,0,10,0"/>
+
+                    <Button Content="✏️ Edit" 
+                            Style="{StaticResource SecondaryButton}" 
+                            Command="{Binding EditSelectedCommand}" 
+                            Padding="10,5" 
+                            Margin="0,0,6,0"
+                            ToolTip="Edit the selected record"/>
+                    <Button Content="📬 Mark Submitted" 
+                            Style="{StaticResource PrimaryButton}" 
+                            Command="{Binding MarkSelectedAsSubmittedCommand}" 
+                            Padding="12,5" 
+                            Margin="0,0,6,0"
+                            ToolTip="Mark selected (or active) devices as Submitted to clear from view"/>
+                    <Button Content="🔄 Re-Open (Pending)" 
+                            Style="{StaticResource SecondaryButton}" 
+                            Command="{Binding MarkSelectedAsPendingCommand}" 
+                            Padding="10,5" 
+                            Margin="0,0,6,0"
+                            ToolTip="Restore selected records back to Pending"/>
+                    <Button Content="🗑️ Delete" 
+                            Style="{StaticResource DangerButton}" 
+                            Command="{Binding DeleteSelectedCommand}" 
+                            Padding="10,5" 
+                            Margin="0,0,6,0"
+                            ToolTip="Delete selected records"/>
+                </StackPanel>
+
+                <!-- Right: Dedicated RMA & File Exports -->
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="Export: " FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Button Content="⚡ AEP RMA" 
+                            Style="{StaticResource PrimaryButton}" 
+                            Command="{Binding ExportAepCommand}" 
+                            Margin="0,0,6,0"
+                            Padding="12,5"
+                            FontWeight="SemiBold"
+                            ToolTip="Export selected/filtered records in official AEP RMA format"/>
+                    <Button Content="🏢 Aclara RMA" 
+                            Style="{StaticResource PrimaryButton}" 
+                            Command="{Binding ExportAclaraCommand}" 
+                            Margin="0,0,6,0"
+                            Padding="12,5"
+                            FontWeight="SemiBold"
+                            ToolTip="Export selected/filtered records in official Aclara RMA format"/>
+                    <Button Content="📊 Excel" 
+                            Style="{StaticResource SuccessButton}" 
+                            Command="{Binding ExportExcelCommand}" 
+                            Margin="0,0,6,0"
+                            Padding="10,5"
+                            ToolTip="Export selected/filtered records to Excel (.xlsx)"/>
+                    <Button Content="📄 CSV" 
+                            Style="{StaticResource SecondaryButton}" 
+                            Command="{Binding ExportCsvCommand}" 
+                            Padding="8,5"
+                            ToolTip="Export to CSV"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main DataGrid Card -->
+        <Border Grid.Row="4" Style="{StaticResource CardPanel}" Padding="0">
+            <DataGrid x:Name="DgRecords" 
+                      ItemsSource="{Binding Records}" 
+                      SelectedItem="{Binding SelectedRecord}"
+                      MouseDoubleClick="DgRecords_MouseDoubleClick"
+                      BorderThickness="0">
+                <DataGrid.Columns>
+                    <!-- Checkbox Multi-Select Column -->
+                    <DataGridTemplateColumn Width="45">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
+                                          Command="{Binding DataContext.ToggleSelectAllCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" 
+                                          HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" IsReadOnly="True" Width="50"/>
+                    <DataGridTextColumn Header="OpCo" Binding="{Binding OpCo}" FontWeight="SemiBold" IsReadOnly="True" Width="110"/>
+                    <DataGridTextColumn Header="Serial #" Binding="{Binding SerialNumber}" FontWeight="Bold" IsReadOnly="True" Width="130"/>
+                    <DataGridTextColumn Header="Module #" Binding="{Binding ModuleNumber}" IsReadOnly="True" Width="140"/>
+                    <DataGridTextColumn Header="Defect / Problem" Binding="{Binding Defect}" IsReadOnly="True" Width="200"/>
+                    <DataGridTemplateColumn Header="Status" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#20808080">
+                                    <TextBlock Text="{Binding Status}" 
+                                               FontWeight="SemiBold" 
+                                               FontSize="12" 
+                                               Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="DEV CD" Binding="{Binding DeviceCode}" IsReadOnly="True" Width="85"/>
+                    <DataGridTextColumn Header="MFR CD" Binding="{Binding ManufacturerCode}" IsReadOnly="True" Width="90"/>
+                    <DataGridTextColumn Header="Catalog #" Binding="{Binding Catalog}" IsReadOnly="True" Width="110"/>
+                    <DataGridTextColumn Header="Customer Input" Binding="{Binding CustomerInput}" IsReadOnly="True" Width="140"/>
+                    <DataGridTextColumn Header="Entered By" Binding="{Binding CreatedBy}" IsReadOnly="True" Width="100"/>
+                    <DataGridTextColumn Header="Created Date" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" IsReadOnly="True" Width="130"/>
+                    <DataGridTextColumn Header="Updated By" Binding="{Binding UpdatedBy}" IsReadOnly="True" Width="100"/>
+                    <DataGridTextColumn Header="Machine" Binding="{Binding MachineName}" IsReadOnly="True" Width="110"/>
+                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" IsReadOnly="True" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Status Message Banner -->
+        <TextBlock Grid.Row="5" 
+                   Text="{Binding StatusMessage}" 
+                   Foreground="{DynamicResource TextSecondaryBrush}" 
+                   FontSize="12" 
+                   Margin="4,6,0,0"/>
+    </Grid>
+</UserControl>
