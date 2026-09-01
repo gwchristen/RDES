@@ -180,8 +180,8 @@ namespace RDES.Tests
         {
             var newOpCo = new OpCoOption
             {
-                Name = "KY - RMA",
-                SortOrder = 10,
+                Name = "NEW - Custom OpCo",
+                SortOrder = 99,
                 IsActive = true
             };
 
@@ -189,14 +189,14 @@ namespace RDES.Tests
             Assert.True(added);
 
             var listAfterAdd = await _repository.GetOpCoOptionsAsync();
-            var addedItem = listAfterAdd.FirstOrDefault(o => o.Name == "KY - RMA");
+            var addedItem = listAfterAdd.FirstOrDefault(o => o.Name == "NEW - Custom OpCo");
             Assert.NotNull(addedItem);
 
             bool deleted = await _repository.DeleteOpCoOptionAsync(addedItem.Id);
             Assert.True(deleted);
 
             var listAfterDelete = await _repository.GetOpCoOptionsAsync();
-            Assert.DoesNotContain(listAfterDelete, o => o.Name == "KY - RMA");
+            Assert.DoesNotContain(listAfterDelete, o => o.Name == "NEW - Custom OpCo");
         }
 
         [Fact]

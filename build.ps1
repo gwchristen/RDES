@@ -1,37 +1,28 @@
-# PowerShell Build Script to generate standalone zero-install RDES.exe
+# PowerShell Build Script to generate standalone zero-install RDES Server and Client editions
 param (
-    [string]$Configuration = "Release",
     [string]$OutputDir = "dist"
 )
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Building RDES Standalone Portable App... " -ForegroundColor Cyan
+Write-Host " Building RDES Server & Client Editions... " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 $root = $PSScriptRoot
 $projectPath = Join-Path $root "src\RDES.App\RDES.App.csproj"
-$outPath = Join-Path $root $OutputDir
+$serverPubXml = Join-Path $root "src\RDES.App\Properties\PublishProfiles\Server-Portable.pubxml"
+$clientPubXml = Join-Path $root "src\RDES.App\Properties\PublishProfiles\Client-Portable.pubxml"
 
-if (Test-Path $outPath) {
-    Remove-Item -Recurse -Force $outPath
-}
+Write-Host "1. Publishing RDES-Server (Host / Master DB Edition)..." -ForegroundColor Yellow
+dotnet publish $projectPath /p:PublishProfile=$serverPubXml
 
-Write-Host "Publishing self-contained Win-x64 Single-File executable to: $outPath" -ForegroundColor Yellow
-
-dotnet publish $projectPath `
-    -c $Configuration `
-    -r win-x64 `
-    --self-contained `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=true `
-    -o $outPath
+Write-Host "`n2. Publishing RDES-Client (Workstation / Network Link Edition)..." -ForegroundColor Yellow
+dotnet publish $projectPath /p:PublishProfile=$clientPubXml
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host " Build Succeeded!" -ForegroundColor Green
-    Write-Host " Standalone Executable: $(Join-Path $outPath 'RDES.exe')" -ForegroundColor Green
-    Write-Host " You can place this file directly on a shared drive or copy to any Windows 11 PC." -ForegroundColor Green
+    Write-Host " Both Editions Built Successfully!" -ForegroundColor Green
+    Write-Host " 1. Server Edition (Builds/Hosts DB): $(Join-Path $root 'dist\Server\RDES-Server.exe')" -ForegroundColor Green
+    Write-Host " 2. Client Edition (Links to Shared DB): $(Join-Path $root 'dist\Client\RDES-Client.exe')" -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
 } else {
     Write-Host "Build failed with exit code $LASTEXITCODE" -ForegroundColor Red

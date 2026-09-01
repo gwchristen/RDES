@@ -7,6 +7,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <Configurations>Debug;Release;Client-Debug;Client-Release</Configurations>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <!-- Server / Host Build Configurations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
+    <AssemblyName>RDES-Server</AssemblyName>
+    <DefineConstants>$(DefineConstants);RDES_HOST</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Client / Workstation Lite Build Configurations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Client-Debug' Or '$(Configuration)' == 'Client-Release'">
+    <AssemblyName>RDES-Client</AssemblyName>
+    <DefineConstants>$(DefineConstants);RDES_CLIENT</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

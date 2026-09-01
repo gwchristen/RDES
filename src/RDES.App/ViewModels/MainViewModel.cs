@@ -53,6 +53,14 @@ namespace RDES.App.ViewModels
         [ObservableProperty]
         private bool _isDarkMode = false;
 
+        public bool IsClientMode => _configService.IsClientMode;
+
+        public string EditionBadgeText => IsClientMode ? "WORKSTATION CLIENT" : "HUB / SERVER";
+
+        public string DisconnectedWarningMessage => IsClientMode
+            ? "Central Shared Database not connected. Please connect to your network share or select the database in Settings."
+            : "Database not connected. Please verify your database path in Settings.";
+
         public MainViewModel()
         {
             _configService = new ConfigService();

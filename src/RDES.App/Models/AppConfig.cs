@@ -12,5 +12,6 @@ namespace RDES.App.Models
         public int PageSize { get; set; } = 500;
         public string LastUsedSheetName { get; set; } = "RMA Entry";
         public string AdminPin { get; set; } = "1234";
+        public bool IsClientMode { get; set; } = false;
     }
 }

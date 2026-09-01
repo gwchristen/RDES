@@ -17,6 +17,7 @@ namespace RDES.App.Services
         private bool _isInitialized = false;
 
         public string DatabasePath => _dbPath;
+        public bool IsClientMode => _configService.IsClientMode;
 
         public DatabaseService(ConfigService configService)
         {
@@ -35,7 +36,7 @@ namespace RDES.App.Services
             var builder = new SqliteConnectionStringBuilder
             {
                 DataSource = _dbPath,
-                Mode = SqliteOpenMode.ReadWriteCreate,
+                Mode = IsClientMode ? SqliteOpenMode.ReadWrite : SqliteOpenMode.ReadWriteCreate,
                 Cache = SqliteCacheMode.Shared,
                 DefaultTimeout = 15
             };
@@ -86,7 +87,25 @@ namespace RDES.App.Services
             {
                 if (_isInitialized) return;
 
-                // Ensure directory exists
+                if (string.IsNullOrWhiteSpace(_dbPath) || !File.Exists(_dbPath))
+                {
+                    _isInitialized = false;
+                    if (IsClientMode)
+                    {
+                        // In Client / Lite mode, do NOT create new local DB file
+                        return;
+                    }
+                }
+
+                if (IsClientMode)
+                {
+                    // In Client mode: connect to existing central DB
+                    using var clientConn = await CreateConnectionAsync();
+                    _isInitialized = true;
+                    return;
+                }
+
+                // Host Mode: Ensure directory exists & create tables/schema
                 string? dir = Path.GetDirectoryName(_dbPath);
                 if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
                 {
@@ -164,29 +183,8 @@ namespace RDES.App.Services
 
                 await conn.ExecuteAsync(createTablesSql);
 
-                // Migration: Ensure OpCo column exists in older database files
-                try
-                {
-                    await conn.ExecuteAsync("ALTER TABLE DeviceRecords ADD COLUMN OpCo TEXT DEFAULT 'OH - RMA';");
-                }
-                catch
-                {
-                    // Column already exists
-                }
-
-                // Seed default defect options if table is empty
-                int count = await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM DefectOptions;");
-                if (count == 0)
-                {
-                    await SeedDefectOptionsAsync(conn);
-                }
-
-                // Seed OpCo options if table is empty
-                int opcoCount = await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM OpCoOptions;");
-                if (opcoCount == 0)
-                {
-                    await SeedOpCoOptionsAsync(conn);
-                }
+                // Seed default catalog options if empty
+                await SeedInitialDataAsync(conn);
 
                 _isInitialized = true;
             }
@@ -196,88 +194,90 @@ namespace RDES.App.Services
             }
         }
 
-        private async Task SeedDefectOptionsAsync(SqliteConnection conn)
+        private async Task SeedInitialDataAsync(SqliteConnection conn)
         {
-            var initialDefects = new List<string>
+            // Seed default Defects
+            var initialDefects = new List<(string Category, string Name)>
             {
-                "Accuracy Issue",
-                "AMI function issue",
-                "Assembly/Installation failure",
-                "Bad interval data",
-                "Battery failure",
-                "Display issue/No display",
-                "Disconnect not working",
-                "Error code 200",
-                "Fast blink on NIC",
-                "Label incorrect",
-                "Meter - Broken base",
-                "Meter - Blades recessed into base",
-                "Meter - Blades split",
-                "Meter - Blade Misaligned/Bent",
-                "Meter - Damaged",
-                "Meter - Damaged during install",
-                "Meter - Dead",
-                "Meter - Displays ERROR",
-                "Meter - UIQ Event",
-                "No Communication",
-                "Not Programmed correctly",
-                "Other*",
-                "Program error",
-                "Rebadge",
-                "Registers not accumulating",
-                "Repeat issue",
-                "Serial number incorrect",
-                "Shipping damage",
-                "T-seals missing",
-                "Wrong firmware",
-                "Won't power up",
-                "MTU - Out of Box (Install) - Cannot program on initial installation",
-                "MTU - Out of Box (Install) - No Readings After Installation",
-                "MTU - In Service - No or Sporadic Readings After Normal Operation",
-                "MTU - In Service - Zero Consumption (MTU transmits, but readings are 0)"
+                ("Optical/LCD", "Broken/Cracked LCD"),
+                ("Optical/LCD", "Faded/Dim Display"),
+                ("Optical/LCD", "Unreadable / Dead Segments"),
+                ("Power", "No Power / Dead Meter"),
+                ("Power", "Intermittent Power Loss"),
+                ("Communication", "Failed AMI Comms / No Read"),
+                ("Communication", "Optical Port Read Failure"),
+                ("Communication", "NIC Failure / No Carrier"),
+                ("Physical/Enclosure", "Burned / Arc Flash Damage"),
+                ("Physical/Enclosure", "Water Ingress / Moisture"),
+                ("Physical/Enclosure", "Tampered / Vandalized"),
+                ("Physical/Enclosure", "Broken Terminal Block / Lug"),
+                ("Calibration", "Accuracy / Out of Calibration"),
+                ("Calibration", "Creep Test Failure"),
+                ("Firmware", "Fatal Firmware Error / Lockup"),
+                ("Firmware", "Bad CRC / Checksum"),
+                ("Other", "Other / See Notes")
             };
 
-            string insertSql = "INSERT OR IGNORE INTO DefectOptions (Category, Name, SortOrder, IsActive) VALUES (@Category, @Name, @SortOrder, 1);";
-            int order = 1;
-            foreach (var defect in initialDefects)
-            {
-                await conn.ExecuteAsync(insertSql, new { Category = "General", Name = defect, SortOrder = order++ });
-            }
-        }
+            string insertDefectSql = @"
+                INSERT OR IGNORE INTO DefectOptions (Category, Name, SortOrder, IsActive)
+                VALUES (@Category, @Name, @SortOrder, 1);
+            ";
 
-        private async Task SeedOpCoOptionsAsync(SqliteConnection conn)
-        {
+            int order = 1;
+            foreach (var (cat, name) in initialDefects)
+            {
+                await conn.ExecuteAsync(insertDefectSql, new { Category = cat, Name = name, SortOrder = order++ });
+            }
+
+            // Seed default OpCos
             var initialOpCos = new List<string>
             {
                 "OH - RMA",
                 "I&M - RMA",
                 "OH - Special",
-                "I&M - Special"
+                "I&M - Special",
+                "AP - RMA",
+                "TX - RMA",
+                "IN - RMA",
+                "PSO - RMA",
+                "SWEPCO - RMA"
             };
 
-            string insertSql = "INSERT OR IGNORE INTO OpCoOptions (Name, SortOrder, IsActive) VALUES (@Name, @SortOrder, 1);";
-            int order = 1;
+            string insertOpCoSql = @"
+                INSERT OR IGNORE INTO OpCoOptions (Name, SortOrder, IsActive)
+                VALUES (@Name, @SortOrder, 1);
+            ";
+
+            order = 1;
             foreach (var opco in initialOpCos)
             {
-                await conn.ExecuteAsync(insertSql, new { Name = opco, SortOrder = order++ });
+                await conn.ExecuteAsync(insertOpCoSql, new { Name = opco, SortOrder = order++ });
             }
         }
 
         public async Task<(bool Success, string Message)> TestConnectionAsync(string? targetPath = null)
         {
             string pathToTest = targetPath ?? _dbPath;
+            if (string.IsNullOrWhiteSpace(pathToTest))
+            {
+                return (false, IsClientMode 
+                    ? "Central database path not configured. Please select the shared network database in Settings."
+                    : "Database path is empty.");
+            }
+
+            if (!File.Exists(pathToTest))
+            {
+                return (false, IsClientMode 
+                    ? $"Central database not found at '{pathToTest}'. Please ensure network share is accessible."
+                    : $"Database file does not exist at '{pathToTest}'. It will be created on first save.");
+            }
+
             try
             {
-                string? dir = Path.GetDirectoryName(pathToTest);
-                if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-
                 var builder = new SqliteConnectionStringBuilder
                 {
                     DataSource = pathToTest,
-                    Mode = SqliteOpenMode.ReadWriteCreate,
+                    Mode = SqliteOpenMode.ReadWrite,
                     DefaultTimeout = 5
                 };
 
@@ -285,10 +285,22 @@ namespace RDES.App.Services
                 await conn.OpenAsync();
 
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT 1;";
+                cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='DeviceRecords';";
                 var result = await cmd.ExecuteScalarAsync();
+                long count = result != null && result != DBNull.Value ? Convert.ToInt64(result) : 0;
 
-                return (true, "Successfully connected to the database!");
+                if (count == 0)
+                {
+                    return (false, IsClientMode 
+                        ? "Connected to file, but central tables (DeviceRecords) were not found."
+                        : "Connected, but tables not yet created.");
+                }
+
+                cmd.CommandText = "SELECT COUNT(*) FROM DeviceRecords;";
+                var recCount = await cmd.ExecuteScalarAsync();
+                long records = recCount != null && recCount != DBNull.Value ? Convert.ToInt64(recCount) : 0;
+
+                return (true, $"✅ Successfully connected to shared database! ({records:N0} records found)");
             }
             catch (Exception ex)
             {

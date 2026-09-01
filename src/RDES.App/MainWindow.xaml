@@ -42,7 +42,12 @@
                             <TextBlock Text="⚡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="RDES" FontSize="20" FontWeight="ExtraBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="RDES" FontSize="20" FontWeight="ExtraBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <Border Background="#203B82F6" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding EditionBadgeText}" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource PrimaryBrush}"/>
+                                </Border>
+                            </StackPanel>
                             <TextBlock Text="Device Entry &amp; Audit Management" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,-2,0,0"/>
                         </StackPanel>
                     </StackPanel>
@@ -145,26 +150,60 @@
             </Grid>
         </Border>
 
-        <!-- Main Content Area with ViewModel DataTemplates -->
-        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}">
-            <ContentControl.Resources>
-                <DataTemplate DataType="{x:Type viewmodels:EntryViewModel}">
-                    <views:EntryView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewmodels:RecordsViewModel}">
-                    <views:RecordsView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewmodels:StatisticsViewModel}">
-                    <views:StatisticsView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewmodels:BulkImportViewModel}">
-                    <views:BulkImportView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewmodels:SettingsViewModel}">
-                    <views:SettingsView />
-                </DataTemplate>
-            </ContentControl.Resources>
-        </ContentControl>
+        <!-- Main Content Area with Disconnected Banner and ViewModel DataTemplates -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- Disconnected Banner -->
+                <RowDefinition Height="*"/>    <!-- Active View -->
+            </Grid.RowDefinitions>
+
+            <!-- Disconnected / Central DB Warning Banner -->
+            <Border Grid.Row="0" 
+                    Background="#25EF4444" 
+                    BorderBrush="#EF4444" 
+                    BorderThickness="0,0,0,1" 
+                    Padding="16,10"
+                    Visibility="{Binding IsDatabaseConnected, Converter={StaticResource InverseBoolToVisConverter}}">
+                <DockPanel>
+                    <Button Content="⚙️ Open Settings to Connect..." 
+                            DockPanel.Dock="Right" 
+                            Style="{StaticResource PrimaryButton}" 
+                            Command="{Binding NavigateToCommand}" 
+                            CommandParameter="4" 
+                            Padding="12,4" 
+                            FontSize="12"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="⚠️ " FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding DisconnectedWarningMessage}" 
+                                   FontWeight="SemiBold" 
+                                   FontSize="12" 
+                                   Foreground="{DynamicResource TextPrimaryBrush}" 
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Active View Content -->
+            <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type viewmodels:EntryViewModel}">
+                        <views:EntryView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:RecordsViewModel}">
+                        <views:RecordsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:StatisticsViewModel}">
+                        <views:StatisticsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:BulkImportViewModel}">
+                        <views:BulkImportView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:SettingsViewModel}">
+                        <views:SettingsView />
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
+        </Grid>
 
         <!-- Bottom Status Bar -->
         <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,8">

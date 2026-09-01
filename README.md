@@ -4,64 +4,60 @@ A zero-installation, high-performance Windows 11 desktop application designed fo
 
 ---
 
-## Key Features
+## 🌟 Dual Build Variations
 
-- **Zero-Installation Portability**:
-  - Standalone single-file executable (`RDES.exe`).
-  - Self-contained (.NET 8 runtime bundled) — runs on any Windows 11 PC out of the box with no installers or admin privileges.
-  - Can be launched directly from a shared network folder or copied locally to desktops.
+RDES provides **two distinct build variations** tailored for multi-user enterprise and shared-folder deployments:
 
-- **Multi-User Shared Drive Concurrency**:
-  - Embedded SQLite configured with **Write-Ahead Logging (WAL)** mode for non-blocking concurrent reads and serialized atomic writes over SMB shares.
-  - Automatic exponential backoff retry handler (`busy_timeout=10000`) to eliminate locking collisions across simultaneous users.
-  - Built-in online database backup tool to generate timestamped snapshots without interrupting active users.
-
-- **Automatic User & Machine Auditing**:
-  - Automatically captures the active Windows login (`Environment.UserName`) and workstation name (`Environment.MachineName`) on every record creation and edit.
-  - Maintains a full `AuditLogs` table for tracking additions, updates, deletions, and bulk imports.
-
-- **Rapid Data Entry & Barcode Support**:
-  - Auto-capitalization for scanned serial numbers.
-  - Instant duplicate detection warning with one-click record loading.
-  - Pre-seeded defect catalog loaded from the RMA lookup tables (35+ predefined categories + custom option).
-  - Keyboard-first workflow: `Enter` or `Ctrl+S` to save, `Ctrl+N` to clear/new, `F5` to refresh.
-  - Live session feed displaying recently entered records in real-time.
-
-- **Spreadsheet Integration & Data Grid**:
-  - **Bulk Import**: Imports records directly from `.xlsm` (Macro-Enabled) or `.xlsx` workbooks (e.g., *RMA Entry*, *AEP*, *Aclara* sheets) with automatic column mapping and duplicate overwrite options.
-  - **Data Search & Filter**: Real-time search across serial numbers, module numbers, defects, users, and notes with quick date presets (*Today*, *This Week*).
-  - **Export**: Export filtered records directly to styled Excel (`.xlsx`) workbooks and `.csv` files.
+| Feature | 🖥️ **RDES-Server (Host Edition)** | 🏢 **RDES-Client (Workstation Edition)** |
+| :--- | :--- | :--- |
+| **Intended Location** | File Server, Shared Network Folder, or Primary Admin PC | Distributed locally to operator PCs or USB drives |
+| **Database Creation** | **Yes** (`ReadWriteCreate`) — auto-initializes tables, schema & default lookups | **No** (`ReadWrite`) — never spawns local DBs; only connects to central DB |
+| **Connection Safety** | Builds and manages the master SQLite WAL database | Warns user gracefully if network share/central DB is unreachable |
+| **Configuration** | Defaults to adjacent `Data\rdes_shared.db` or configured path | Links to shared UNC path (e.g. `\\Server\Shared\RDES_Data\rdes_shared.db`) |
+| **Header Badge** | `⚡ RDES [HUB / SERVER]` | `⚡ RDES [WORKSTATION CLIENT]` |
+| **Executable Name** | `RDES-Server.exe` | `RDES-Client.exe` |
 
 ---
 
-## Deployment & Multi-User Setup
+## 🔨 Building in Visual Studio 2022 (No Scripts or Command Line Required)
 
-### Option 1: Run Directly from a Shared Network Folder (Recommended)
-1. Copy `RDES.exe` to your network share (e.g., `\\Server\Shared\RDES\` or mapped drive `Z:\RDES\`).
-2. Have users create a shortcut to `RDES.exe` on their Windows 11 desktops.
-3. Open `RDES.exe`, navigate to **Settings & Shared DB**, and set the database path (e.g., `\\Server\Shared\RDES\Data\rdes_shared.db`).
-4. Click **Save & Connect**. All PCs will now read and write to the same shared database simultaneously.
+You can build and publish both portable single-file executables directly from **Visual Studio 2022**:
 
-### Option 2: Run Locally Pointing to a Shared DB
-1. Copy `RDES.exe` to each user's PC.
-2. In **Settings & Shared DB**, point the database location to the shared network path `\\Server\Shared\Data\rdes_shared.db`.
+### Method 1: Using Visual Studio Publish Profiles (1-Click)
+1. Open `RDES.sln` in **Visual Studio 2022**.
+2. In **Solution Explorer**, right-click the **`RDES.App`** project and select **`Publish...`**.
+3. In the Publish window, you will see two pre-configured profiles:
+   - **`Server-Portable`** (Builds `dist\Server\RDES-Server.exe`)
+   - **`Client-Portable`** (Builds `dist\Client\RDES-Client.exe`)
+4. Click the **`Publish`** button in the upper right.
+5. Visual Studio will produce the self-contained single-file `.exe` in `dist\Server\` or `dist\Client\`.
+
+### Method 2: Building via Visual Studio Solution Configurations
+1. In Visual Studio's top toolbar configuration dropdown:
+   - Choose **`Release`** for **Server Edition**.
+   - Choose **`Client-Release`** for **Workstation Client Edition**.
+2. Go to **Build** $\rightarrow$ **Build Solution** (`Ctrl+Shift+B`).
 
 ---
 
-## Building from Source
+## 📦 Multi-User Deployment Guide
 
-### Prerequisites
-- .NET 8.0 SDK or .NET 9.0 SDK installed on Windows.
+### Step 1: Deploy the Central Server / Database
+1. Place **`RDES-Server.exe`** in your central network shared folder (e.g., `\\Server\Shared\RDES_Data\`).
+2. Launch it once — it will automatically create and initialize the master SQLite database (`rdes_shared.db`) with full WAL concurrency and default OpCo/Defect catalogs.
 
-### Build Standalone Executable
-Run the included PowerShell script:
-```powershell
-.\build.ps1
-```
-The resulting single-file executable will be generated at:
-`dist\RDES.exe`
+### Step 2: Distribute Workstation Clients to Operators
+1. Copy **`RDES-Client.exe`** to operators' PCs (or let them run it from their desktop).
+2. On first launch, if not yet configured, the client displays a banner:
+   `"⚠️ Central Shared Database not connected."`
+3. In **Settings & Shared DB**, unlock with Admin PIN (`1234`), browse to the network file `\\Server\Shared\RDES_Data\rdes_shared.db`, and click **Save & Connect**.
+4. The client will store this link in its local `config.json` and immediately synchronize live with the server without creating any unwanted local databases.
 
-### Run Tests
+---
+
+## 🧪 Automated Testing
+Run automated unit and concurrency tests:
 ```powershell
 dotnet test
 ```
+*(All 16 concurrency and multi-user tests pass with full WAL verification)*

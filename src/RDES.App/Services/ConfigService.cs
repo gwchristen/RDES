@@ -13,9 +13,15 @@ namespace RDES.App.Services
 
         public AppConfig CurrentConfig => _currentConfig;
 
+        public bool IsClientMode =>
+#if RDES_CLIENT
+            true;
+#else
+            _currentConfig?.IsClientMode ?? false;
+#endif
+
         public ConfigService()
         {
-            // First check adjacent to executable
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             _configFilePath = Path.Combine(baseDir, ConfigFileName);
             _currentConfig = LoadConfig();
@@ -31,7 +37,10 @@ namespace RDES.App.Services
                     var loaded = JsonSerializer.Deserialize<AppConfig>(json);
                     if (loaded != null)
                     {
-                        if (string.IsNullOrWhiteSpace(loaded.DatabasePath))
+#if RDES_CLIENT
+                        loaded.IsClientMode = true;
+#endif
+                        if (string.IsNullOrWhiteSpace(loaded.DatabasePath) && !loaded.IsClientMode)
                         {
                             loaded.DatabasePath = GetDefaultDbPath();
                         }
@@ -47,8 +56,15 @@ namespace RDES.App.Services
 
             _currentConfig = new AppConfig
             {
-                DatabasePath = GetDefaultDbPath()
+#if RDES_CLIENT
+                IsClientMode = true,
+                DatabasePath = string.Empty // Client does NOT create or default to a local database
+#else
+                IsClientMode = false,
+                DatabasePath = GetDefaultDbPath() // Host defaults to local Data/rdes_shared.db
+#endif
             };
+
             SaveConfig(_currentConfig);
             return _currentConfig;
         }
