@@ -207,13 +207,17 @@
             <!-- Defect Catalog Management Card -->
             <Border Grid.Row="6" Style="{StaticResource CardPanel}">
                 <StackPanel>
-                    <TextBlock Text="Defect / Problem Catalog" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
-                    <TextBlock Text="Add new defect descriptions to the drop-down list in the Data Entry form." 
+                    <DockPanel Margin="0,0,0,4">
+                        <TextBlock Text="Defect / Problem Catalog" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Manage active defect options used across Data Entry &amp; Filters" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock Text="Add new defect descriptions to the drop-down list in the Data Entry form or remove unwanted items." 
                                Foreground="{DynamicResource TextSecondaryBrush}" 
                                FontSize="12" 
                                Margin="0,0,0,12"/>
 
-                    <Grid>
+                    <!-- Add New Defect Form -->
+                    <Grid Margin="0,0,0,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="10"/>
@@ -222,15 +226,46 @@
 
                         <TextBox Text="{Binding NewDefectName, UpdateSourceTrigger=PropertyChanged}" 
                                  Height="36" 
+                                 FontSize="13"
                                  VerticalContentAlignment="Center"/>
 
                         <Button Grid.Column="2" 
-                                Content="➕ Add to Defect List" 
-                                Style="{StaticResource SecondaryButton}" 
+                                Content="➕ Add Defect" 
+                                Style="{StaticResource PrimaryButton}" 
                                 Command="{Binding AddNewDefectCommand}" 
                                 Height="36" 
                                 Padding="16,0"/>
                     </Grid>
+
+                    <!-- Active Defects List -->
+                    <TextBlock Text="Current Active Defects:" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding DefectList}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#203B82F6" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <Button Content="✕" 
+                                                Foreground="#EF4444" 
+                                                FontWeight="Bold" 
+                                                FontSize="11" 
+                                                Background="Transparent" 
+                                                BorderThickness="0" 
+                                                Cursor="Hand"
+                                                ToolTip="Remove Defect from list"
+                                                Command="{Binding DataContext.DeleteDefectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Padding="2,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
 

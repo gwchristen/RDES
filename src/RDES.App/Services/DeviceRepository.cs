@@ -389,6 +389,16 @@ namespace RDES.App.Services
             });
         }
 
+        public async Task<bool> DeleteDefectOptionAsync(long id)
+        {
+            return await ExecuteWithRetryAsync(async conn =>
+            {
+                string sql = "UPDATE DefectOptions SET IsActive = 0 WHERE Id = @Id;";
+                int affected = await conn.ExecuteAsync(sql, new { Id = id });
+                return affected > 0;
+            });
+        }
+
         public async Task<List<OpCoOption>> GetOpCoOptionsAsync()
         {
             return await ExecuteWithRetryAsync(async conn =>

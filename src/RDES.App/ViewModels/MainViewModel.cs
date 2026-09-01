@@ -77,6 +77,7 @@ namespace RDES.App.ViewModels
             RecordsVM.RequestEditRecord += OnRequestEditRecord;
             SettingsVM.DatabasePathChanged += OnDatabasePathChanged;
             SettingsVM.OpCoListChanged += OnOpCoListChanged;
+            SettingsVM.DefectListChanged += OnDefectListChanged;
         }
 
         [RelayCommand]
@@ -93,6 +94,13 @@ namespace RDES.App.ViewModels
         {
             await EntryVM.LoadOpCoOptionsAsync();
             await RecordsVM.LoadOpCoFiltersAsync();
+            await StatisticsVM.LoadFilterOptionsAsync();
+        }
+
+        private async void OnDefectListChanged()
+        {
+            await EntryVM.LoadDefectOptionsAsync();
+            await RecordsVM.LoadDefectFiltersAsync();
             await StatisticsVM.LoadFilterOptionsAsync();
         }
 

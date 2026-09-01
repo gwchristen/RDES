@@ -32,15 +32,10 @@ namespace RDES.App.Views
         {
             if (e.Key == Key.Enter)
             {
-                if (DataContext is EntryViewModel vm)
-                {
-                    // If user hit Enter on SerialNumber and Defect is selected, execute Save
-                    if (!string.IsNullOrWhiteSpace(vm.SerialNumber) && !string.IsNullOrWhiteSpace(vm.SelectedDefect))
-                    {
-                        vm.SaveCommand.Execute(null);
-                        e.Handled = true;
-                    }
-                }
+                // Scanners often suffix Enter - advance focus to Module # field rather than auto-submitting
+                e.Handled = true;
+                TxtModuleNumber.Focus();
+                TxtModuleNumber.SelectAll();
             }
         }
 

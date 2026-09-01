@@ -176,6 +176,15 @@ namespace RDES.App.ViewModels
             }
         }
 
+        partial void OnSelectedRecordChanged(DeviceRecord? value)
+        {
+            if (value != null && !value.IsSelected)
+            {
+                value.IsSelected = true;
+                UpdateSelectedCount();
+            }
+        }
+
         private void OnRecordPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(DeviceRecord.IsSelected))
@@ -203,6 +212,7 @@ namespace RDES.App.ViewModels
         [RelayCommand]
         public void DeselectAll()
         {
+            SelectedRecord = null;
             foreach (var r in Records)
             {
                 r.IsSelected = false;

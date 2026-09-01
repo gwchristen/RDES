@@ -44,12 +44,14 @@ namespace RDES.App.ViewModels
         private string _newOpCoName = string.Empty;
 
         public ObservableCollection<OpCoOption> OpCoList { get; } = new();
+        public ObservableCollection<DefectOption> DefectList { get; } = new();
 
         public string ActiveUserName => Environment.UserName;
         public string ActiveMachineName => Environment.MachineName;
 
         public event Action? DatabasePathChanged;
         public event Action? OpCoListChanged;
+        public event Action? DefectListChanged;
 
         public SettingsViewModel(ConfigService configService, DatabaseService databaseService, DeviceRepository repository)
         {
@@ -59,6 +61,7 @@ namespace RDES.App.ViewModels
 
             LoadSettings();
             _ = LoadOpCosAsync();
+            _ = LoadDefectsAsync();
         }
 
         public async Task LoadOpCosAsync()
@@ -75,6 +78,23 @@ namespace RDES.App.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to load OpCos: {ex.Message}");
+            }
+        }
+
+        public async Task LoadDefectsAsync()
+        {
+            try
+            {
+                var list = await _repository.GetDefectOptionsAsync();
+                DefectList.Clear();
+                foreach (var item in list)
+                {
+                    DefectList.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load Defects: {ex.Message}");
             }
         }
 
@@ -194,6 +214,8 @@ namespace RDES.App.ViewModels
                 {
                     StatusMessage = $"✅ Added defect '{NewDefectName}' to lookup list.";
                     NewDefectName = string.Empty;
+                    await LoadDefectsAsync();
+                    DefectListChanged?.Invoke();
                 }
                 else
                 {
@@ -203,6 +225,27 @@ namespace RDES.App.ViewModels
             catch (Exception ex)
             {
                 StatusMessage = $"Failed to add defect: {ex.Message}";
+            }
+        }
+
+        [RelayCommand]
+        public async Task DeleteDefectAsync(DefectOption? defect)
+        {
+            if (defect == null) return;
+
+            try
+            {
+                bool ok = await _repository.DeleteDefectOptionAsync(defect.Id);
+                if (ok)
+                {
+                    StatusMessage = $"Removed defect '{defect.Name}'.";
+                    await LoadDefectsAsync();
+                    DefectListChanged?.Invoke();
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to remove defect: {ex.Message}";
             }
         }
 
