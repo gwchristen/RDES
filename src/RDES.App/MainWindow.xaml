@@ -29,8 +29,14 @@
                 </Grid.RowDefinitions>
 
                 <!-- Row 0: App Title & User / DB Badges -->
-                <DockPanel Grid.Row="0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: App Logo & Title -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- App Icon Badge -->
                         <Border Background="{DynamicResource PrimaryBrush}" CornerRadius="6" Width="36" Height="36" Margin="0,0,12,0">
                             <TextBlock Text="⚡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -41,28 +47,8 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Right Badges -->
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
-                        <!-- Theme Toggle Button -->
-                        <Button Style="{StaticResource SecondaryButton}" 
-                                Command="{Binding ToggleThemeCommand}" 
-                                Padding="10,4" 
-                                Margin="0,0,10,0"
-                                ToolTip="Toggle Light / Dark Mode">
-                            <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="🌙 Dark Mode"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsDarkMode}" Value="True">
-                                                <Setter Property="Text" Value="☀️ Light Mode"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Button>
-
+                    <!-- Right Badges: Connection -> User -> Machine -> Dark Mode Toggle -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <!-- Connection Status Pill -->
                         <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="10,4" Margin="0,0,10,0">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -91,14 +77,33 @@
                         </Border>
 
                         <!-- Machine Badge -->
-                        <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="10,4">
+                        <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="10,4" Margin="0,0,12,0">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="💻 " FontSize="12"/>
                                 <TextBlock Text="{Binding CurrentMachineName}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Border>
+
+                        <!-- Theme Toggle Button (After PC Name) -->
+                        <Button Style="{StaticResource SecondaryButton}" 
+                                Command="{Binding ToggleThemeCommand}" 
+                                Padding="12,5" 
+                                ToolTip="Toggle Light / Dark Mode">
+                            <TextBlock VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="🌙 Dark Mode"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDarkMode}" Value="True">
+                                                <Setter Property="Text" Value="☀️ Light Mode"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
                     </StackPanel>
-                </DockPanel>
+                </Grid>
 
                 <!-- Row 2: Navigation Pill Tabs -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal">

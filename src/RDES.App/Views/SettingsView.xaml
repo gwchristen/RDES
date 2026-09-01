@@ -4,24 +4,124 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="750" d:DesignWidth="1000">
+             d:DesignHeight="850" d:DesignWidth="1000">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <Grid Margin="20">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/> <!-- Shared DB Card -->
+                <RowDefinition Height="Auto"/> <!-- Row 0: Security & Admin Lock Banner -->
                 <RowDefinition Height="16"/>
-                <RowDefinition Height="Auto"/> <!-- Backup Card -->
+                <RowDefinition Height="Auto"/> <!-- Row 2: Shared DB Card -->
                 <RowDefinition Height="16"/>
-                <RowDefinition Height="Auto"/> <!-- OpCo Management Card -->
+                <RowDefinition Height="Auto"/> <!-- Row 4: Backup Card -->
                 <RowDefinition Height="16"/>
-                <RowDefinition Height="Auto"/> <!-- Defect Management Card -->
+                <RowDefinition Height="Auto"/> <!-- Row 6: OpCo Management Card -->
                 <RowDefinition Height="16"/>
-                <RowDefinition Height="Auto"/> <!-- System Info Card -->
+                <RowDefinition Height="Auto"/> <!-- Row 8: Defect Management Card -->
+                <RowDefinition Height="16"/>
+                <RowDefinition Height="Auto"/> <!-- Row 10: System Info Card -->
             </Grid.RowDefinitions>
 
-            <!-- Shared Network Database Configuration Card -->
-            <Border Grid.Row="0" Style="{StaticResource CardPanel}">
+            <!-- Row 0: Security & Admin Lock Card -->
+            <Border Grid.Row="0" Style="{StaticResource CardPanel}" Padding="16,14">
+                <Grid>
+                    <!-- Locked State View -->
+                    <DockPanel Visibility="{Binding IsSettingsLocked, Converter={StaticResource BoolToVisConverter}}">
+                        <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" MaxWidth="650">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="🔒 Protected Settings &amp; Shared Database" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <Border Background="#20F59E0B" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="12" Padding="8,2" Margin="10,0,0,0">
+                                    <TextBlock Text="LOCKED" FontSize="11" FontWeight="Bold" Foreground="#D97706"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Modifications to the shared database connection, OpCos, and defect catalog are locked to prevent accidental changes." 
+                                       Foreground="{DynamicResource TextSecondaryBrush}" 
+                                       FontSize="12" 
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Unlock Controls -->
+                        <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <!-- Show Unlock Button -->
+                            <Button Content="🔓 Unlock with Admin PIN" 
+                                    Style="{StaticResource PrimaryButton}" 
+                                    Command="{Binding ShowPinPromptCommand}" 
+                                    Padding="14,6"
+                                    Visibility="{Binding IsPinPromptVisible, Converter={StaticResource InverseBoolToVisConverter}}"/>
+
+                            <!-- Inline PIN Input Prompt -->
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsPinPromptVisible, Converter={StaticResource BoolToVisConverter}}">
+                                <TextBox Text="{Binding PinInput, UpdateSourceTrigger=PropertyChanged}" 
+                                         Width="100" 
+                                         Height="34" 
+                                         FontSize="14" 
+                                         FontWeight="Bold"
+                                         VerticalContentAlignment="Center"
+                                         ToolTip="Enter 4-digit Admin PIN (Default: 1234)"/>
+                                <Button Content="Unlock" 
+                                        Style="{StaticResource SuccessButton}" 
+                                        Command="{Binding UnlockSettingsCommand}" 
+                                        Height="34" 
+                                        Padding="12,0" 
+                                        Margin="6,0,4,0"/>
+                                <Button Content="✕" 
+                                        Style="{StaticResource SecondaryButton}" 
+                                        Command="{Binding CancelPinPromptCommand}" 
+                                        Height="34" 
+                                        Padding="8,0" 
+                                        ToolTip="Cancel"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding PinMessage}" 
+                                       Foreground="#EF4444" 
+                                       FontSize="11" 
+                                       FontWeight="SemiBold" 
+                                       Margin="0,4,0,0" 
+                                       HorizontalAlignment="Right"
+                                       Visibility="{Binding PinMessage, Converter={StaticResource StringNotEmptyToVisConverter}}"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Unlocked State View -->
+                    <DockPanel Visibility="{Binding IsSettingsUnlocked, Converter={StaticResource BoolToVisConverter}}">
+                        <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="🔓 Administrator Mode Active" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"/>
+                                <Border Background="#2010B981" BorderBrush="#10B981" BorderThickness="1" CornerRadius="12" Padding="8,2" Margin="10,0,0,0">
+                                    <TextBlock Text="UNLOCKED" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="You have full administrative permissions to configure network paths, backups, and lookup catalogs." 
+                                       Foreground="{DynamicResource TextSecondaryBrush}" 
+                                       FontSize="12"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <!-- Change PIN Box -->
+                            <TextBox Text="{Binding NewPinInput, UpdateSourceTrigger=PropertyChanged}" 
+                                     Width="90" 
+                                     Height="32" 
+                                     VerticalContentAlignment="Center" 
+                                     ToolTip="Enter new 4+ digit PIN" 
+                                     Margin="0,0,4,0"/>
+                            <Button Content="Update PIN" 
+                                    Style="{StaticResource SecondaryButton}" 
+                                    Command="{Binding ChangeAdminPinCommand}" 
+                                    Height="32" 
+                                    Padding="8,0" 
+                                    Margin="0,0,10,0"/>
+                            <!-- Re-lock Button -->
+                            <Button Content="🔒 Lock Settings" 
+                                    Style="{StaticResource DangerButton}" 
+                                    Command="{Binding LockSettingsCommand}" 
+                                    Height="32" 
+                                    Padding="12,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </Border>
+
+            <!-- Row 2: Shared Network Database Configuration Card -->
+            <Border Grid.Row="2" Style="{StaticResource CardPanel}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
                         <TextBlock Text="Shared Network Database Configuration" 
@@ -52,12 +152,14 @@
                         <TextBox Text="{Binding DatabasePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                                  Height="36" 
                                  FontSize="13"
+                                 IsReadOnly="{Binding IsSettingsLocked}"
                                  VerticalContentAlignment="Center"/>
 
                         <Button Grid.Column="2" 
                                 Content="📁 Browse / Select..." 
                                 Style="{StaticResource SecondaryButton}" 
                                 Command="{Binding BrowseDatabasePathCommand}" 
+                                IsEnabled="{Binding IsSettingsUnlocked}"
                                 Height="36" 
                                 Padding="16,0"/>
                     </Grid>
@@ -100,6 +202,7 @@
                     <DockPanel>
                         <CheckBox Content="Automatically uppercase scanned serial numbers" 
                                   IsChecked="{Binding AutoUppercaseSerials}" 
+                                  IsEnabled="{Binding IsSettingsUnlocked}"
                                   VerticalAlignment="Center" 
                                   FontWeight="Medium"/>
 
@@ -111,6 +214,7 @@
                             <Button Content="💾 Save &amp; Connect" 
                                     Style="{StaticResource PrimaryButton}" 
                                     Command="{Binding SaveSettingsCommand}" 
+                                    IsEnabled="{Binding IsSettingsUnlocked}"
                                     MinWidth="140" 
                                     Height="36"/>
                         </StackPanel>
@@ -118,8 +222,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- Database Backup & Snapshots Card -->
-            <Border Grid.Row="2" Style="{StaticResource CardPanel}">
+            <!-- Row 4: Database Backup & Snapshots Card -->
+            <Border Grid.Row="4" Style="{StaticResource CardPanel}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Left" MaxWidth="600">
                         <TextBlock Text="Database Backup &amp; Snapshots" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
@@ -139,8 +243,8 @@
                 </DockPanel>
             </Border>
 
-            <!-- OpCo (Operating Company) Management Card -->
-            <Border Grid.Row="4" Style="{StaticResource CardPanel}">
+            <!-- Row 6: OpCo Management Card -->
+            <Border Grid.Row="6" Style="{StaticResource CardPanel}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="Operating Companies (OpCo) Management" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
@@ -152,7 +256,7 @@
                                Margin="0,0,0,12"/>
 
                     <!-- Add New OpCo Form -->
-                    <Grid Margin="0,0,0,14">
+                    <Grid Margin="0,0,0,14" IsEnabled="{Binding IsSettingsUnlocked}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="10"/>
@@ -193,6 +297,7 @@
                                                 BorderThickness="0" 
                                                 Cursor="Hand"
                                                 ToolTip="Remove OpCo"
+                                                IsEnabled="{Binding DataContext.IsSettingsUnlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Command="{Binding DataContext.DeleteOpCoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Padding="2,0"/>
@@ -204,8 +309,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- Defect Catalog Management Card -->
-            <Border Grid.Row="6" Style="{StaticResource CardPanel}">
+            <!-- Row 8: Defect Catalog Management Card -->
+            <Border Grid.Row="8" Style="{StaticResource CardPanel}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="Defect / Problem Catalog" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
@@ -217,7 +322,7 @@
                                Margin="0,0,0,12"/>
 
                     <!-- Add New Defect Form -->
-                    <Grid Margin="0,0,0,14">
+                    <Grid Margin="0,0,0,14" IsEnabled="{Binding IsSettingsUnlocked}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="10"/>
@@ -258,6 +363,7 @@
                                                 BorderThickness="0" 
                                                 Cursor="Hand"
                                                 ToolTip="Remove Defect from list"
+                                                IsEnabled="{Binding DataContext.IsSettingsUnlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 Command="{Binding DataContext.DeleteDefectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Padding="2,0"/>
@@ -269,8 +375,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- System Information & Audit Context Card -->
-            <Border Grid.Row="8" Style="{StaticResource CardPanel}">
+            <!-- Row 10: System Information & Audit Context Card -->
+            <Border Grid.Row="10" Style="{StaticResource CardPanel}">
                 <StackPanel>
                     <TextBlock Text="Current Environment &amp; Audit Tracking" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10"/>
 
@@ -278,22 +384,22 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Active Windows User:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Text="{Binding ActiveUserName}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
-                        </StackPanel>
+                            <TextBlock Text="Logged-in Windows User:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding ActiveUserName}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" Margin="0,2,0,8"/>
 
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="Machine Name:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                            <TextBlock Text="Operating System Machine:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             <TextBlock Text="{Binding ActiveMachineName}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Application Architecture:" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
-                            <TextBlock Text=".NET 8.0 WPF (Zero-Install Portable)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource PrimaryBrush}" Margin="0,2,0,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Application Architecture:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text=".NET 8.0 WPF (x64) Portable" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,8"/>
+
+                            <TextBlock Text="Storage Engine:" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="SQLite Multi-Process WAL" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource SuccessBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Grid>
                 </StackPanel>

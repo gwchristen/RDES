@@ -11,6 +11,7 @@
 
             <!-- Converters -->
             <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisConverter"/>
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter"/>
             <converters:NullToVisibilityConverter x:Key="NullToVisConverter"/>
             <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>

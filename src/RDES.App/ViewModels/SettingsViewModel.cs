@@ -43,6 +43,23 @@ namespace RDES.App.ViewModels
         [ObservableProperty]
         private string _newOpCoName = string.Empty;
 
+        [ObservableProperty]
+        private bool _isSettingsLocked = true;
+
+        [ObservableProperty]
+        private string _pinInput = string.Empty;
+
+        [ObservableProperty]
+        private string _newPinInput = string.Empty;
+
+        [ObservableProperty]
+        private string _pinMessage = string.Empty;
+
+        [ObservableProperty]
+        private bool _isPinPromptVisible = false;
+
+        public bool IsSettingsUnlocked => !IsSettingsLocked;
+
         public ObservableCollection<OpCoOption> OpCoList { get; } = new();
         public ObservableCollection<DefectOption> DefectList { get; } = new();
 
@@ -62,6 +79,70 @@ namespace RDES.App.ViewModels
             LoadSettings();
             _ = LoadOpCosAsync();
             _ = LoadDefectsAsync();
+        }
+
+        [RelayCommand]
+        public void ShowPinPrompt()
+        {
+            PinInput = string.Empty;
+            PinMessage = string.Empty;
+            IsPinPromptVisible = true;
+        }
+
+        [RelayCommand]
+        public void CancelPinPrompt()
+        {
+            PinInput = string.Empty;
+            PinMessage = string.Empty;
+            IsPinPromptVisible = false;
+        }
+
+        [RelayCommand]
+        public void UnlockSettings()
+        {
+            var config = _configService.CurrentConfig;
+            string correctPin = string.IsNullOrWhiteSpace(config.AdminPin) ? "1234" : config.AdminPin.Trim();
+
+            if (string.Equals(PinInput?.Trim(), correctPin, StringComparison.Ordinal))
+            {
+                IsSettingsLocked = false;
+                IsPinPromptVisible = false;
+                PinInput = string.Empty;
+                PinMessage = string.Empty;
+                StatusMessage = "🔓 Administrator mode unlocked. You can now modify shared configuration.";
+                OnPropertyChanged(nameof(IsSettingsUnlocked));
+            }
+            else
+            {
+                PinMessage = "❌ Incorrect Admin PIN. Default is '1234'.";
+            }
+        }
+
+        [RelayCommand]
+        public void LockSettings()
+        {
+            IsSettingsLocked = true;
+            IsPinPromptVisible = false;
+            PinInput = string.Empty;
+            PinMessage = string.Empty;
+            StatusMessage = "🔒 Settings locked.";
+            OnPropertyChanged(nameof(IsSettingsUnlocked));
+        }
+
+        [RelayCommand]
+        public void ChangeAdminPin()
+        {
+            if (string.IsNullOrWhiteSpace(NewPinInput) || NewPinInput.Trim().Length < 4)
+            {
+                StatusMessage = "PIN must be at least 4 characters.";
+                return;
+            }
+
+            var config = _configService.CurrentConfig;
+            config.AdminPin = NewPinInput.Trim();
+            _configService.SaveConfig(config);
+            NewPinInput = string.Empty;
+            StatusMessage = "✅ Admin PIN successfully updated.";
         }
 
         public async Task LoadOpCosAsync()
