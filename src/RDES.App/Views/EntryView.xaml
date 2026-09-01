@@ -252,7 +252,18 @@
                             <DataGridTextColumn Header="Serial #" Binding="{Binding SerialNumber}" FontWeight="Bold" Width="130"/>
                             <DataGridTextColumn Header="Module #" Binding="{Binding ModuleNumber}" Width="150"/>
                             <DataGridTextColumn Header="Defect" Binding="{Binding Defect}" Width="180"/>
-                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90"/>
+                            <DataGridTemplateColumn Header="Status" Width="95">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#20808080">
+                                            <TextBlock Text="{Binding Status}" 
+                                                       FontWeight="SemiBold" 
+                                                       FontSize="12" 
+                                                       Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Entered By" Binding="{Binding CreatedBy}" Width="100"/>
                             <DataGridTextColumn Header="Time" Binding="{Binding CreatedAt, StringFormat='{}{0:HH:mm:ss}'}" Width="80"/>
                             <DataGridTextColumn Header="Device Code" Binding="{Binding DeviceCode}" Width="90"/>
