@@ -7,6 +7,14 @@ namespace RDES.App.Services
 {
     public class ConfigService
     {
+        // ================================================================================================
+        // 🛠️ HARDCODED CENTRAL DATABASE PATH FOR CLIENT WORKSTATIONS (EDIT THIS LINE)
+        // Set your company's network shared database path here (UNC path or mapped drive letter).
+        // Any RDES-Client build will automatically connect to this location on first launch!
+        // Example: @"\\Server\Shared\RDES_Data\rdes_shared.db" or @"Z:\RDES_Data\rdes_shared.db"
+        // ================================================================================================
+        public const string HardcodedCentralDatabasePath = @"\\Server\Shared\RDES_Data\rdes_shared.db";
+
         private static readonly string ConfigFileName = "config.json";
         private readonly string _configFilePath;
         private AppConfig _currentConfig;
@@ -22,7 +30,7 @@ namespace RDES.App.Services
 
         public ConfigService()
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string baseDir = AppContext.BaseDirectory;
             _configFilePath = Path.Combine(baseDir, ConfigFileName);
             _currentConfig = LoadConfig();
         }
@@ -39,11 +47,16 @@ namespace RDES.App.Services
                     {
 #if RDES_CLIENT
                         loaded.IsClientMode = true;
-#endif
+                        if (string.IsNullOrWhiteSpace(loaded.DatabasePath))
+                        {
+                            loaded.DatabasePath = HardcodedCentralDatabasePath;
+                        }
+#else
                         if (string.IsNullOrWhiteSpace(loaded.DatabasePath) && !loaded.IsClientMode)
                         {
-                            loaded.DatabasePath = GetDefaultDbPath();
+                            loaded.DatabasePath = GetDefaultServerDbPath();
                         }
+#endif
                         _currentConfig = loaded;
                         return _currentConfig;
                     }
@@ -58,10 +71,10 @@ namespace RDES.App.Services
             {
 #if RDES_CLIENT
                 IsClientMode = true,
-                DatabasePath = string.Empty // Client does NOT create or default to a local database
+                DatabasePath = HardcodedCentralDatabasePath // Auto-links to your hardcoded central path
 #else
                 IsClientMode = false,
-                DatabasePath = GetDefaultDbPath() // Host defaults to local Data/rdes_shared.db
+                DatabasePath = GetDefaultServerDbPath()     // Creates rdes_shared.db in the same folder as RDES-Server.exe
 #endif
             };
 
@@ -85,25 +98,13 @@ namespace RDES.App.Services
             }
         }
 
-        public string GetDefaultDbPath()
+        /// <summary>
+        /// Gets default database path for RDES-Server.exe (directly in the exact same folder as the executable).
+        /// </summary>
+        public string GetDefaultServerDbPath()
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string dataDir = Path.Combine(baseDir, "Data");
-            if (!Directory.Exists(dataDir))
-            {
-                try
-                {
-                    Directory.CreateDirectory(dataDir);
-                }
-                catch
-                {
-                    // Fallback to local appdata if base directory is read-only
-                    string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RDES");
-                    Directory.CreateDirectory(appData);
-                    return Path.Combine(appData, "rdes_shared.db");
-                }
-            }
-            return Path.Combine(dataDir, "rdes_shared.db");
+            string baseDir = AppContext.BaseDirectory;
+            return Path.Combine(baseDir, "rdes_shared.db");
         }
     }
 }
