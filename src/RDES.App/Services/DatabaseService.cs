@@ -1,11 +1,25 @@
+using Dapper;
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.ExtendedProperties;
+using DocumentFormat.OpenXml.Math;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Data.Sqlite;
+using Microsoft.Win32;
+using RDES.App.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.IO;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Dapper;
-using Microsoft.Data.Sqlite;
-using RDES.App.Models;
+using System.Windows.Documents;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RDES.App.Services
 {
@@ -106,7 +120,7 @@ namespace RDES.App.Services
                 }
 
                 // Host Mode: Ensure directory exists & create tables/schema
-                string? dir = Path.GetDirectoryName(_dbPath);
+                string? dir = System.IO.Path.GetDirectoryName(_dbPath);
                 if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
                 {
                     Directory.CreateDirectory(dir);
@@ -199,23 +213,46 @@ namespace RDES.App.Services
             // Seed default Defects
             var initialDefects = new List<(string Category, string Name)>
             {
-                ("Optical/LCD", "Broken/Cracked LCD"),
-                ("Optical/LCD", "Faded/Dim Display"),
-                ("Optical/LCD", "Unreadable / Dead Segments"),
-                ("Power", "No Power / Dead Meter"),
-                ("Power", "Intermittent Power Loss"),
-                ("Communication", "Failed AMI Comms / No Read"),
-                ("Communication", "Optical Port Read Failure"),
-                ("Communication", "NIC Failure / No Carrier"),
-                ("Physical/Enclosure", "Burned / Arc Flash Damage"),
-                ("Physical/Enclosure", "Water Ingress / Moisture"),
-                ("Physical/Enclosure", "Tampered / Vandalized"),
-                ("Physical/Enclosure", "Broken Terminal Block / Lug"),
-                ("Calibration", "Accuracy / Out of Calibration"),
-                ("Calibration", "Creep Test Failure"),
-                ("Firmware", "Fatal Firmware Error / Lockup"),
-                ("Firmware", "Bad CRC / Checksum"),
-                ("Other", "Other / See Notes")
+                ("Accuracy Issue", "Accuracy Issue"),
+                ("AMI function issue", "AMI function issue"),
+                ("Assembly/Installation failure", "Assembly/Installation failure"),
+                ("Bad interval data", "Bad interval data"),
+                ("Battery failure", "Battery failure"),
+                ("Communication failure", "Communication failure"),
+                ("Configuration issue", "Configuration issue"),
+                ("Corrosion", "Corrosion"),
+                ("Damaged during shipping", "Damaged during shipping"),
+                ("Display issue/No display", "Display issue/No display"),
+                ("Disconnect not working", "Disconnect not working"),
+                ("Error code 200", "Error code 200"),
+                ("Fast blink on NIC", "Fast blink on NIC"),
+                ("Label incorrect", "Label incorrect"),
+                ("Meter - Broken base", "Meter - Broken base"),
+                ("Meter - Blades recessed into base", "Meter - Blades recessed into base"),
+                ("Meter - Blades split", "Meter - Blades split"),
+                ("Meter - Blade Misaligned/Bent", "Meter - Blade Misaligned/Bent"),
+                ("Meter - Damaged", "Meter - Damaged"),
+                ("Meter - Damaged during install", "Meter - Damaged during install"),
+                ("Meter - Dead", "Meter - Dead"),
+                ("Meter - Displays ERROR", "Meter - Displays ERROR"),
+                ("Meter - UIQ Event", "Meter - UIQ Event"),
+                ("No Communication", "No Communication"),
+                ("Not Programmed correctly", "Not Programmed correctly"),
+                ("Other*", "Other*"),
+                ("Program error", "Program error"),
+                ("Rebadge", "Rebadge"),
+                ("Registers not accumulating", "Registers not accumulating"),
+                ("Repeat issue", "Repeat issue"),
+                ("Serial number incorrect", "Serial number incorrect"),
+                ("Shipping damage", "Shipping damage"),
+                ("T-seals missing", "T-seals missing"),
+                ("Wrong firmware", "Wrong firmware"),
+                ("Won't power up", "Won't power up"),
+                ("MTU - Out of Box (Install) - Cannot program on initial installation (please provide error code from Mobile Programmer) - AclaraConnect Document 000005301", "MTU - Out of Box (Install) - Cannot program on initial installation (please provide error code from Mobile Programmer) - AclaraConnect Document 000005301"),
+                ("MTU - Out of Box (Install) - No Readings After Installation - AclaraConnect Document 000005305", "MTU - Out of Box (Install) - No Readings After Installation - AclaraConnect Document 000005305"),
+                ("MTU - In Service - No or Sporadic Readings After Normal Operation - AclaraConnect Document 000005304", "MTU - In Service - No or Sporadic Readings After Normal Operation - AclaraConnect Document 000005304"),
+                ("MTU - In Service - Zero Consumption (MTU transmits, but readings are 0) - AclaraConnect Document 000005306", "MTU - In Service - Zero Consumption (MTU transmits, but readings are 0) - AclaraConnect Document 000005306")
+
             };
 
             string insertDefectSql = @"
@@ -235,12 +272,7 @@ namespace RDES.App.Services
                 "OH - RMA",
                 "I&M - RMA",
                 "OH - Special",
-                "I&M - Special",
-                "AP - RMA",
-                "TX - RMA",
-                "IN - RMA",
-                "PSO - RMA",
-                "SWEPCO - RMA"
+                "I&M - Special"
             };
 
             string insertOpCoSql = @"
@@ -324,7 +356,7 @@ namespace RDES.App.Services
 
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string backupFileName = $"RDES_Backup_{timestamp}.db";
-                string destPath = Path.Combine(destinationFolder, backupFileName);
+                string destPath = System.IO.Path.Combine(destinationFolder, backupFileName);
 
                 using var srcConn = await CreateConnectionAsync();
                 var builder = new SqliteConnectionStringBuilder
