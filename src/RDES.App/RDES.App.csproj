@@ -14,14 +14,20 @@
   <!-- Server / Host Build Configurations -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
     <AssemblyName>RDES-Server</AssemblyName>
+    <ApplicationIcon>Assets\RDESServer.ico</ApplicationIcon>
     <DefineConstants>$(DefineConstants);RDES_HOST</DefineConstants>
   </PropertyGroup>
 
   <!-- Client / Workstation Lite Build Configurations -->
   <PropertyGroup Condition="'$(Configuration)' == 'Client-Debug' Or '$(Configuration)' == 'Client-Release'">
     <AssemblyName>RDES-Client</AssemblyName>
+    <ApplicationIcon>Assets\RDESClient.ico</ApplicationIcon>
     <DefineConstants>$(DefineConstants);RDES_CLIENT</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\*.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.1" />

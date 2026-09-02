@@ -38,8 +38,8 @@
                     <!-- Left: App Logo & Title -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- App Icon Badge -->
-                        <Border Background="{DynamicResource PrimaryBrush}" CornerRadius="6" Width="36" Height="36" Margin="0,0,12,0">
-                            <TextBlock Text="⚡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="36" Height="36" Margin="0,0,12,0" CornerRadius="8" ClipToBounds="True">
+                            <Image Source="{Binding AppHeaderIcon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

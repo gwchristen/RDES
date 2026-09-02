@@ -1,5 +1,7 @@
+using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using RDES.App.ViewModels;
 
 namespace RDES.App
@@ -14,6 +16,8 @@ namespace RDES.App
             _viewModel = new MainViewModel();
             DataContext = _viewModel;
 
+            ApplyAppIcon();
+
             Loaded += async (s, e) =>
             {
                 await _viewModel.InitializeAsync();
@@ -21,6 +25,20 @@ namespace RDES.App
 
             // Global Keybindings
             KeyDown += MainWindow_KeyDown;
+        }
+
+        private void ApplyAppIcon()
+        {
+            try
+            {
+                string iconName = _viewModel.IsClientMode ? "RDESClient.ico" : "RDESServer.ico";
+                var iconUri = new Uri($"pack://application:,,,/Assets/{iconName}", UriKind.RelativeOrAbsolute);
+                Icon = BitmapFrame.Create(iconUri);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to set window icon: {ex.Message}");
+            }
         }
 
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)

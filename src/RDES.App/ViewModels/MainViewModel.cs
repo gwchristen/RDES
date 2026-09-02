@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RDES.App.Models;
@@ -60,6 +62,23 @@ namespace RDES.App.ViewModels
         public string DisconnectedWarningMessage => IsClientMode
             ? "Central Shared Database not connected. Please connect to your network share or select the database in Settings."
             : "Database not connected. Please verify your database path in Settings.";
+
+        public ImageSource? AppHeaderIcon
+        {
+            get
+            {
+                try
+                {
+                    string iconName = IsClientMode ? "RDESClient.ico" : "RDESServer.ico";
+                    var uri = new Uri($"pack://application:,,,/Assets/{iconName}", UriKind.RelativeOrAbsolute);
+                    return BitmapFrame.Create(uri);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
 
         public MainViewModel()
         {

@@ -28,9 +28,26 @@ namespace RDES.App.Services
             _currentConfig?.IsClientMode ?? false;
 #endif
 
+        /// <summary>
+        /// Returns the real disk folder where the .exe is running, avoiding any %TEMP% single-file extraction directories.
+        /// </summary>
+        public static string GetAppDirectory()
+        {
+            string? processPath = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(processPath))
+            {
+                string? dir = Path.GetDirectoryName(processPath);
+                if (!string.IsNullOrWhiteSpace(dir))
+                {
+                    return dir;
+                }
+            }
+            return AppContext.BaseDirectory;
+        }
+
         public ConfigService()
         {
-            string baseDir = AppContext.BaseDirectory;
+            string baseDir = GetAppDirectory();
             _configFilePath = Path.Combine(baseDir, ConfigFileName);
             _currentConfig = LoadConfig();
         }
@@ -103,7 +120,7 @@ namespace RDES.App.Services
         /// </summary>
         public string GetDefaultServerDbPath()
         {
-            string baseDir = AppContext.BaseDirectory;
+            string baseDir = GetAppDirectory();
             return Path.Combine(baseDir, "rdes_shared.db");
         }
     }
