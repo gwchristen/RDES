@@ -121,7 +121,12 @@ namespace RDES.App.Services
                     checkSuccess = await _backoffPolicy.ExecuteWithRetryAsync<bool>(
                         async token =>
                         {
-                            return await _communicator.PingAsync(token);
+                            bool pingOk = await _communicator.PingAsync(token);
+                            if (!pingOk)
+                            {
+                                throw new System.IO.IOException("Modem ping failed during soak check.");
+                            }
+                            return true;
                         },
                         onRetry: async (ex, attempt) =>
                         {

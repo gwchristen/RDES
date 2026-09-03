@@ -40,6 +40,7 @@ namespace RDES.App.Services
 
             if (newState == ModemState.Disconnected && !_isRecovering)
             {
+                _isRecovering = true;
                 _totalDisconnects++;
                 await _incidentLogService.LogIncidentAsync(
                     "Warning",
