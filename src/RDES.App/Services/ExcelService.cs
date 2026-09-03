@@ -96,7 +96,6 @@ namespace RDES.App.Services
                 string serial = GetVal(worksheet, r, headerMap, "Serial #", "SERIAL #", "Serial", "Customer Serial Number", "Aclara Serial Number(s) / Range - Start ");
                 if (string.IsNullOrWhiteSpace(serial))
                 {
-                    // If no explicit serial header matched, check column named 'Full Barcode' or try first column
                     serial = GetVal(worksheet, r, headerMap, "Full Barcode");
                     if (string.IsNullOrWhiteSpace(serial)) continue;
                 }
@@ -106,22 +105,23 @@ namespace RDES.App.Services
                 record.ModuleNumber = GetVal(worksheet, r, headerMap, "Module #", "MOD #", "Module Number", "MOD TYPE");
                 
                 // Defect & Problem
-                record.Defect = GetVal(worksheet, r, headerMap, "Defect", "PROBLEM", "Customer Issue", "Failure Location");
-                record.Problem = GetVal(worksheet, r, headerMap, "PROBLEM", "Defect");
+                record.Defect = GetVal(worksheet, r, headerMap, "Defect / Problem", "Defect", "PROBLEM", "Problem", "Customer Issue", "Failure Location");
+                record.Problem = GetVal(worksheet, r, headerMap, "PROBLEM", "Defect / Problem", "Defect");
                 record.OtherProblem = GetVal(worksheet, r, headerMap, "OTHER PROBLEM");
 
-                // Additional metadata
-                record.DeviceCode = GetVal(worksheet, r, headerMap, "DEV CD", "Device");
-                record.ManufacturerCode = GetVal(worksheet, r, headerMap, "MFR CD", "Manu");
+                // Additional metadata matching Device Records columns
+                record.DeviceCode = GetVal(worksheet, r, headerMap, "DEV CD", "Device Code", "Device");
+                record.ManufacturerCode = GetVal(worksheet, r, headerMap, "MFR CD", "MFR Code", "Manufacturer Code", "Manu");
                 record.MfgDate = GetVal(worksheet, r, headerMap, "MFG DATE");
                 record.ModType = GetVal(worksheet, r, headerMap, "MOD TYPE");
                 record.ModNumber = GetVal(worksheet, r, headerMap, "MOD #");
                 record.RecordType = GetVal(worksheet, r, headerMap, "TYPE");
-                record.Catalog = GetVal(worksheet, r, headerMap, "CATALOG", "Catalog/Part Number");
+                record.Catalog = GetVal(worksheet, r, headerMap, "Catalog #", "CATALOG", "Catalog/Part Number", "Catalog");
                 record.FileNumber = GetVal(worksheet, r, headerMap, "FILE");
-                record.Status = GetVal(worksheet, r, headerMap, "STATUS", "Status");
+                record.Status = GetVal(worksheet, r, headerMap, "Status", "STATUS");
                 if (string.IsNullOrWhiteSpace(record.Status)) record.Status = "Pending";
 
+                record.BatchId = GetVal(worksheet, r, headerMap, "Batch ID", "Batch #", "BATCH", "BatchId");
                 record.OpCo = GetVal(worksheet, r, headerMap, "OpCo", "OPCO", "Operating Company", "Op Co");
                 if (string.IsNullOrWhiteSpace(record.OpCo)) record.OpCo = "OH - RMA";
 
@@ -131,7 +131,17 @@ namespace RDES.App.Services
                 record.MaterialGroup = GetVal(worksheet, r, headerMap, "Material Group");
                 record.FailureLocation = GetVal(worksheet, r, headerMap, "Failure Location");
                 record.CustomerIssue = GetVal(worksheet, r, headerMap, "Customer Issue");
-                record.CustomerInput = GetVal(worksheet, r, headerMap, "Customer Input (30 Characters)");
+                record.CustomerInput = GetVal(worksheet, r, headerMap, "Customer Input (30 Characters)", "Customer Input");
+                record.Notes = GetVal(worksheet, r, headerMap, "Notes", "NOTE", "Remarks", "Comments");
+                record.CreatedBy = GetVal(worksheet, r, headerMap, "Entered By", "Created By", "USER", "User");
+                record.UpdatedBy = GetVal(worksheet, r, headerMap, "Updated By");
+                record.MachineName = GetVal(worksheet, r, headerMap, "Machine", "Machine Name");
+
+                string dateStr = GetVal(worksheet, r, headerMap, "Created Date", "Date", "DATE");
+                if (!string.IsNullOrWhiteSpace(dateStr) && DateTime.TryParse(dateStr, out var parsedDate))
+                {
+                    record.CreatedAt = parsedDate;
+                }
 
                 string qtyStr = GetVal(worksheet, r, headerMap, "Qty ", "Qty", "Quantity");
                 if (int.TryParse(qtyStr, out int q) && q > 0)
@@ -168,10 +178,9 @@ namespace RDES.App.Services
 
             var headers = new[]
             {
-                "ID", "Serial #", "Module #", "OpCo", "Defect", "Status",
-                "Device Code", "MFR Code", "Catalog", "Problem",
-                "Customer Input", "Notes", "Created By", "Created Date",
-                "Updated By", "Updated Date", "Machine"
+                "ID", "OpCo", "Serial #", "Module #", "Defect / Problem", "Status",
+                "Batch ID", "DEV CD", "MFR CD", "Catalog #", "Entered By", "Created Date",
+                "Updated By", "Machine", "Notes"
             };
 
             for (int i = 0; i < headers.Length; i++)
@@ -188,22 +197,20 @@ namespace RDES.App.Services
             foreach (var r in records)
             {
                 worksheet.Cell(row, 1).Value = r.Id;
-                worksheet.Cell(row, 2).Value = r.SerialNumber;
-                worksheet.Cell(row, 3).Value = r.ModuleNumber;
-                worksheet.Cell(row, 4).Value = r.OpCo;
-                worksheet.Cell(row, 5).Value = r.Defect;
+                worksheet.Cell(row, 2).Value = r.OpCo;
+                worksheet.Cell(row, 3).Value = r.SerialNumber;
+                worksheet.Cell(row, 4).Value = r.ModuleNumber;
+                worksheet.Cell(row, 5).Value = !string.IsNullOrEmpty(r.Defect) ? r.Defect : r.Problem;
                 worksheet.Cell(row, 6).Value = r.Status;
-                worksheet.Cell(row, 7).Value = r.DeviceCode;
-                worksheet.Cell(row, 8).Value = r.ManufacturerCode;
-                worksheet.Cell(row, 9).Value = r.Catalog;
-                worksheet.Cell(row, 10).Value = r.Problem;
-                worksheet.Cell(row, 11).Value = r.CustomerInput;
-                worksheet.Cell(row, 12).Value = r.Notes;
-                worksheet.Cell(row, 13).Value = r.CreatedBy;
-                worksheet.Cell(row, 14).Value = r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-                worksheet.Cell(row, 15).Value = r.UpdatedBy;
-                worksheet.Cell(row, 16).Value = r.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss");
-                worksheet.Cell(row, 17).Value = r.MachineName;
+                worksheet.Cell(row, 7).Value = r.BatchId;
+                worksheet.Cell(row, 8).Value = r.DeviceCode;
+                worksheet.Cell(row, 9).Value = r.ManufacturerCode;
+                worksheet.Cell(row, 10).Value = r.Catalog;
+                worksheet.Cell(row, 11).Value = r.CreatedBy;
+                worksheet.Cell(row, 12).Value = r.CreatedAt.ToString("yyyy-MM-dd HH:mm");
+                worksheet.Cell(row, 13).Value = r.UpdatedBy;
+                worksheet.Cell(row, 14).Value = r.MachineName;
+                worksheet.Cell(row, 15).Value = r.Notes;
 
                 // Alternate row background (zebra striping)
                 if (row % 2 == 0)
@@ -223,28 +230,26 @@ namespace RDES.App.Services
         public void ExportToCsv(IEnumerable<DeviceRecord> records, string filePath)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("ID,Serial #,Module #,OpCo,Defect,Status,Device Code,MFR Code,Catalog,Problem,Customer Input,Notes,Created By,Created Date,Updated By,Updated Date,Machine");
+            sb.AppendLine("ID,OpCo,Serial #,Module #,Defect / Problem,Status,Batch ID,DEV CD,MFR CD,Catalog #,Entered By,Created Date,Updated By,Machine,Notes");
 
             foreach (var r in records)
             {
                 sb.AppendLine(string.Join(",",
                     EscapeCsv(r.Id.ToString()),
+                    EscapeCsv(r.OpCo),
                     EscapeCsv(r.SerialNumber),
                     EscapeCsv(r.ModuleNumber),
-                    EscapeCsv(r.OpCo),
-                    EscapeCsv(r.Defect),
+                    EscapeCsv(!string.IsNullOrEmpty(r.Defect) ? r.Defect : r.Problem),
                     EscapeCsv(r.Status),
+                    EscapeCsv(r.BatchId),
                     EscapeCsv(r.DeviceCode),
                     EscapeCsv(r.ManufacturerCode),
                     EscapeCsv(r.Catalog),
-                    EscapeCsv(r.Problem),
-                    EscapeCsv(r.CustomerInput),
-                    EscapeCsv(r.Notes),
                     EscapeCsv(r.CreatedBy),
                     EscapeCsv(r.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")),
                     EscapeCsv(r.UpdatedBy),
-                    EscapeCsv(r.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")),
-                    EscapeCsv(r.MachineName)
+                    EscapeCsv(r.MachineName),
+                    EscapeCsv(r.Notes)
                 ));
             }
 

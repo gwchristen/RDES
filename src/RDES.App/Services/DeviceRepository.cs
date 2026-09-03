@@ -86,14 +86,14 @@ namespace RDES.App.Services
                     INSERT INTO DeviceRecords (
                         SerialNumber, ModuleNumber, Defect, DeviceCode, ManufacturerCode,
                         MfgDate, ModType, ModNumber, Problem, OtherProblem,
-                        RecordType, Catalog, FileNumber, Status, OpCo, AclaraSerialStart,
+                        RecordType, Catalog, FileNumber, Status, BatchId, OpCo, AclaraSerialStart,
                         AclaraSerialEnd, CustomerSerialNumber, MaterialGroup, FailureLocation,
                         CustomerIssue, CustomerInput, Quantity, Notes, CreatedBy,
                         CreatedAt, UpdatedBy, UpdatedAt, MachineName
                     ) VALUES (
                         @SerialNumber, @ModuleNumber, @Defect, @DeviceCode, @ManufacturerCode,
                         @MfgDate, @ModType, @ModNumber, @Problem, @OtherProblem,
-                        @RecordType, @Catalog, @FileNumber, @Status, @OpCo, @AclaraSerialStart,
+                        @RecordType, @Catalog, @FileNumber, @Status, @BatchId, @OpCo, @AclaraSerialStart,
                         @AclaraSerialEnd, @CustomerSerialNumber, @MaterialGroup, @FailureLocation,
                         @CustomerIssue, @CustomerInput, @Quantity, @Notes, @CreatedBy,
                         @CreatedAt, @UpdatedBy, @UpdatedAt, @MachineName
@@ -149,6 +149,7 @@ namespace RDES.App.Services
                         Catalog = @Catalog,
                         FileNumber = @FileNumber,
                         Status = @Status,
+                        BatchId = @BatchId,
                         OpCo = @OpCo,
                         AclaraSerialStart = @AclaraSerialStart,
                         AclaraSerialEnd = @AclaraSerialEnd,
@@ -230,14 +231,24 @@ namespace RDES.App.Services
                 string currentMachine = Environment.MachineName;
                 DateTime now = DateTime.Now;
 
-                string sql = @"
-                    UPDATE DeviceRecords SET
-                        Status = @Status,
-                        UpdatedBy = @UpdatedBy,
-                        UpdatedAt = @UpdatedAt,
-                        MachineName = @MachineName
-                    WHERE Id IN @Ids;
-                ";
+                string sql = newStatus == "Pending"
+                    ? @"
+                        UPDATE DeviceRecords SET
+                            Status = @Status,
+                            BatchId = NULL,
+                            UpdatedBy = @UpdatedBy,
+                            UpdatedAt = @UpdatedAt,
+                            MachineName = @MachineName
+                        WHERE Id IN @Ids;
+                    "
+                    : @"
+                        UPDATE DeviceRecords SET
+                            Status = @Status,
+                            UpdatedBy = @UpdatedBy,
+                            UpdatedAt = @UpdatedAt,
+                            MachineName = @MachineName
+                        WHERE Id IN @Ids;
+                    ";
 
                 int affected = await conn.ExecuteAsync(sql, new
                 {
@@ -266,6 +277,103 @@ namespace RDES.App.Services
                 trans.Commit();
                 return affected;
             });
+        }
+
+        public async Task<Dictionary<string, string>> SubmitRecordsWithBatchAsync(IEnumerable<long> ids)
+        {
+            var idList = ids.ToList();
+            var results = new Dictionary<string, string>();
+            if (idList.Count == 0) return results;
+
+            await ExecuteWithRetryAsync(async conn =>
+            {
+                using var trans = conn.BeginTransaction();
+                string currentUser = Environment.UserName;
+                string currentMachine = Environment.MachineName;
+                DateTime now = DateTime.Now;
+
+                // 1. Fetch records to group by OpCo
+                string selectSql = "SELECT Id, OpCo FROM DeviceRecords WHERE Id IN @Ids;";
+                var records = (await conn.QueryAsync<(long Id, string OpCo)>(selectSql, new { Ids = idList }, trans)).ToList();
+
+                var opcoGroups = records.GroupBy(r => !string.IsNullOrWhiteSpace(r.OpCo) ? r.OpCo.Trim() : "Unassigned");
+                string monthYear = now.ToString("MMyyyy");
+                string prefix = $"AEP-{monthYear}-";
+
+                foreach (var group in opcoGroups)
+                {
+                    string opco = group.Key;
+                    var groupIds = group.Select(g => g.Id).ToList();
+
+                    // 2. Query existing batch IDs for this OpCo with matching prefix
+                    string maxBatchSql = @"
+                        SELECT BatchId 
+                        FROM DeviceRecords 
+                        WHERE OpCo = @OpCo AND BatchId LIKE @PrefixPattern
+                        ORDER BY BatchId DESC;
+                    ";
+
+                    var existingBatches = (await conn.QueryAsync<string>(maxBatchSql, new 
+                    { 
+                        OpCo = opco, 
+                        PrefixPattern = prefix + "%" 
+                    }, trans)).ToList();
+
+                    int nextSeq = 1;
+                    foreach (var b in existingBatches)
+                    {
+                        if (!string.IsNullOrWhiteSpace(b) && b.StartsWith(prefix))
+                        {
+                            string seqPart = b.Substring(prefix.Length);
+                            if (int.TryParse(seqPart, out int num) && num >= nextSeq)
+                            {
+                                nextSeq = num + 1;
+                            }
+                        }
+                    }
+
+                    string batchId = $"{prefix}{nextSeq:D4}";
+                    results[opco] = batchId;
+
+                    // 3. Update records to Submitted with BatchId
+                    string updateSql = @"
+                        UPDATE DeviceRecords SET
+                            Status = 'Submitted',
+                            BatchId = @BatchId,
+                            UpdatedBy = @UpdatedBy,
+                            UpdatedAt = @UpdatedAt,
+                            MachineName = @MachineName
+                        WHERE Id IN @Ids;
+                    ";
+
+                    int affected = await conn.ExecuteAsync(updateSql, new
+                    {
+                        BatchId = batchId,
+                        UpdatedBy = currentUser,
+                        UpdatedAt = now,
+                        MachineName = currentMachine,
+                        Ids = groupIds
+                    }, trans);
+
+                    // 4. Audit log
+                    string auditSql = @"
+                        INSERT INTO AuditLogs (RecordId, Action, Details, UserName, MachineName, Timestamp)
+                        VALUES (NULL, 'BATCH_SUBMIT', @Details, @UserName, @MachineName, @Timestamp);
+                    ";
+                    await conn.ExecuteAsync(auditSql, new
+                    {
+                        Details = $"Submitted {affected} record(s) for OpCo '{opco}' in Batch '{batchId}'",
+                        UserName = currentUser,
+                        MachineName = currentMachine,
+                        Timestamp = now
+                    }, trans);
+                }
+
+                trans.Commit();
+                return true;
+            });
+
+            return results;
         }
 
         public async Task<DeviceRecord?> GetByIdAsync(long id)
@@ -312,6 +420,7 @@ namespace RDES.App.Services
                         OR CustomerInput LIKE @Query
                         OR Notes LIKE @Query
                         OR OpCo LIKE @Query
+                        OR BatchId LIKE @Query
                         OR CreatedBy LIKE @Query
                         OR UpdatedBy LIKE @Query
                     )");
@@ -485,6 +594,7 @@ namespace RDES.App.Services
                                         Catalog = @Catalog,
                                         FileNumber = @FileNumber,
                                         Status = @Status,
+                                        BatchId = @BatchId,
                                         OpCo = @OpCo,
                                         AclaraSerialStart = @AclaraSerialStart,
                                         AclaraSerialEnd = @AclaraSerialEnd,
@@ -520,14 +630,14 @@ namespace RDES.App.Services
                                 INSERT INTO DeviceRecords (
                                     SerialNumber, ModuleNumber, Defect, DeviceCode, ManufacturerCode,
                                     MfgDate, ModType, ModNumber, Problem, OtherProblem,
-                                    RecordType, Catalog, FileNumber, Status, OpCo, AclaraSerialStart,
+                                    RecordType, Catalog, FileNumber, Status, BatchId, OpCo, AclaraSerialStart,
                                     AclaraSerialEnd, CustomerSerialNumber, MaterialGroup, FailureLocation,
                                     CustomerIssue, CustomerInput, Quantity, Notes, CreatedBy,
                                     CreatedAt, UpdatedBy, UpdatedAt, MachineName
                                 ) VALUES (
                                     @SerialNumber, @ModuleNumber, @Defect, @DeviceCode, @ManufacturerCode,
                                     @MfgDate, @ModType, @ModNumber, @Problem, @OtherProblem,
-                                    @RecordType, @Catalog, @FileNumber, @Status, @OpCo, @AclaraSerialStart,
+                                    @RecordType, @Catalog, @FileNumber, @Status, @BatchId, @OpCo, @AclaraSerialStart,
                                     @AclaraSerialEnd, @CustomerSerialNumber, @MaterialGroup, @FailureLocation,
                                     @CustomerIssue, @CustomerInput, @Quantity, @Notes, @CreatedBy,
                                     @CreatedAt, @UpdatedBy, @UpdatedAt, @MachineName

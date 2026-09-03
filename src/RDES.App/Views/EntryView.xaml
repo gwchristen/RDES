@@ -171,7 +171,7 @@
 
                         <!-- Row 1: Device Code, Manufacturer Code, Catalog/Part # -->
                         <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,14">
-                            <TextBlock Text="Device Code (DEV CD)" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
+                            <TextBlock Text="Device Code (DEV CD) *" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5"/>
                             <TextBox Text="{Binding DeviceCode, UpdateSourceTrigger=PropertyChanged}" 
                                      Height="34"
                                      KeyDown="TxtFormField_KeyDown"/>

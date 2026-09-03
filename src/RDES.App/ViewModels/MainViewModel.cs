@@ -122,6 +122,7 @@ namespace RDES.App.ViewModels
             await EntryVM.LoadOpCoOptionsAsync();
             await RecordsVM.LoadOpCoFiltersAsync();
             await StatisticsVM.LoadFilterOptionsAsync();
+            await BulkImportVM.LoadOpCoOptionsAsync();
         }
 
         private async void OnDefectListChanged()
@@ -151,6 +152,10 @@ namespace RDES.App.ViewModels
             {
                 _ = StatisticsVM.RefreshStatisticsAsync();
             }
+            else if (value == 3)
+            {
+                _ = BulkImportVM.LoadOpCoOptionsAsync();
+            }
         }
 
         public async Task InitializeAsync()
@@ -159,6 +164,7 @@ namespace RDES.App.ViewModels
             await EntryVM.InitializeAsync();
             await RecordsVM.InitializeAsync();
             await StatisticsVM.InitializeAsync();
+            await BulkImportVM.LoadOpCoOptionsAsync();
             await RefreshStatsAsync();
         }
 

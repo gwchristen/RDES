@@ -25,6 +25,9 @@ namespace RDES.App.ViewModels
         private string _selectedSheet = string.Empty;
 
         [ObservableProperty]
+        private string _selectedOpCo = "OH - RMA";
+
+        [ObservableProperty]
         private bool _overwriteDuplicates = false;
 
         [ObservableProperty]
@@ -40,6 +43,7 @@ namespace RDES.App.ViewModels
         private bool _hasParsedRecords = false;
 
         public ObservableCollection<string> AvailableSheets { get; } = new();
+        public ObservableCollection<string> OpCoList { get; } = new();
         public ObservableCollection<DeviceRecord> PreviewRecords { get; } = new();
 
         private List<DeviceRecord> _allParsedRecords = new();
@@ -49,6 +53,43 @@ namespace RDES.App.ViewModels
             _repository = repository;
             _excelService = excelService;
             _configService = configService;
+        }
+
+        public async Task LoadOpCoOptionsAsync()
+        {
+            try
+            {
+                var options = await _repository.GetOpCoOptionsAsync();
+                OpCoList.Clear();
+                foreach (var opt in options)
+                {
+                    OpCoList.Add(opt.Name);
+                }
+
+                if (OpCoList.Count > 0 && (string.IsNullOrEmpty(SelectedOpCo) || !OpCoList.Contains(SelectedOpCo)))
+                {
+                    SelectedOpCo = OpCoList.First();
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error loading OpCo options: {ex.Message}";
+            }
+        }
+
+        partial void OnSelectedOpCoChanged(string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value) && _allParsedRecords.Count > 0)
+            {
+                foreach (var r in _allParsedRecords)
+                {
+                    r.OpCo = value;
+                }
+                foreach (var r in PreviewRecords)
+                {
+                    r.OpCo = value;
+                }
+            }
         }
 
         [RelayCommand]
@@ -126,8 +167,16 @@ namespace RDES.App.ViewModels
             try
             {
                 _allParsedRecords = _excelService.ImportFromSpreadsheet(SelectedFilePath, SelectedSheet);
-                PreviewRecords.Clear();
 
+                if (!string.IsNullOrWhiteSpace(SelectedOpCo))
+                {
+                    foreach (var r in _allParsedRecords)
+                    {
+                        r.OpCo = SelectedOpCo;
+                    }
+                }
+
+                PreviewRecords.Clear();
                 foreach (var r in _allParsedRecords.Take(100))
                 {
                     PreviewRecords.Add(r);
@@ -135,7 +184,7 @@ namespace RDES.App.ViewModels
 
                 PreviewCount = _allParsedRecords.Count;
                 HasParsedRecords = _allParsedRecords.Count > 0;
-                StatusMessage = $"Parsed {_allParsedRecords.Count} device record(s) from sheet '{SelectedSheet}'. Showing preview of first {PreviewRecords.Count}.";
+                StatusMessage = $"Parsed {_allParsedRecords.Count} device record(s) from sheet '{SelectedSheet}' for OpCo '{SelectedOpCo}'. Showing preview of first {PreviewRecords.Count}.";
             }
             catch (Exception ex)
             {
@@ -157,13 +206,21 @@ namespace RDES.App.ViewModels
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(SelectedOpCo))
+            {
+                foreach (var r in _allParsedRecords)
+                {
+                    r.OpCo = SelectedOpCo;
+                }
+            }
+
             IsBusy = true;
-            StatusMessage = $"Importing {_allParsedRecords.Count} records into database...";
+            StatusMessage = $"Importing {_allParsedRecords.Count} records into database for OpCo '{SelectedOpCo}'...";
             try
             {
                 var result = await _repository.BulkInsertAsync(_allParsedRecords, OverwriteDuplicates);
 
-                StatusMessage = $"✅ Import complete! Inserted: {result.InsertedCount}, Updated: {result.UpdatedCount}, Skipped: {result.SkippedDuplicates}, Errors: {result.Errors.Count}";
+                StatusMessage = $"✅ Import complete for '{SelectedOpCo}'! Inserted: {result.InsertedCount}, Updated: {result.UpdatedCount}, Skipped: {result.SkippedDuplicates}, Errors: {result.Errors.Count}";
             }
             catch (Exception ex)
             {

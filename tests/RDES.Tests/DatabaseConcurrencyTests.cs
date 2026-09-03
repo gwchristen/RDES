@@ -294,5 +294,132 @@ namespace RDES.Tests
             var devDefectGroup = await _repository.GetGroupedStatisticsAsync(null, null, "All", "All", "All", "All", "All", "DeviceCode", "Defect");
             Assert.Contains(devDefectGroup, g => g.Key == "EH006" && g.SubKey == "Accuracy Issue" && g.Count >= 2);
         }
+
+        [Fact]
+        public async Task SubmitRecordsWithBatch_GeneratesIncrementingBatchIdPerOpCo()
+        {
+            string monthYear = DateTime.Now.ToString("MMyyyy");
+
+            // Setup records for OH - RMA
+            long id1 = await _repository.InsertRecordAsync(new DeviceRecord
+            {
+                SerialNumber = "BATCH-OH-01",
+                OpCo = "OH - RMA",
+                DeviceCode = "DEV01",
+                Defect = "Faded Display"
+            });
+            long id2 = await _repository.InsertRecordAsync(new DeviceRecord
+            {
+                SerialNumber = "BATCH-OH-02",
+                OpCo = "OH - RMA",
+                DeviceCode = "DEV01",
+                Defect = "Faded Display"
+            });
+
+            // Submit first batch for OH - RMA
+            var batch1 = await _repository.SubmitRecordsWithBatchAsync(new[] { id1, id2 });
+            Assert.True(batch1.ContainsKey("OH - RMA"));
+            string expectedBatch1 = $"AEP-{monthYear}-0001";
+            Assert.Equal(expectedBatch1, batch1["OH - RMA"]);
+
+            var r1 = await _repository.GetByIdAsync(id1);
+            Assert.NotNull(r1);
+            Assert.Equal("Submitted", r1.Status);
+            Assert.Equal(expectedBatch1, r1.BatchId);
+
+            // Setup second batch for OH - RMA
+            long id3 = await _repository.InsertRecordAsync(new DeviceRecord
+            {
+                SerialNumber = "BATCH-OH-03",
+                OpCo = "OH - RMA",
+                DeviceCode = "DEV02",
+                Defect = "No Power"
+            });
+
+            var batch2 = await _repository.SubmitRecordsWithBatchAsync(new[] { id3 });
+            Assert.True(batch2.ContainsKey("OH - RMA"));
+            string expectedBatch2 = $"AEP-{monthYear}-0002";
+            Assert.Equal(expectedBatch2, batch2["OH - RMA"]);
+
+            // Setup batch for AP - RMA (should start at 0001 for AP)
+            long idAp = await _repository.InsertRecordAsync(new DeviceRecord
+            {
+                SerialNumber = "BATCH-AP-01",
+                OpCo = "AP - RMA",
+                DeviceCode = "DEV03",
+                Defect = "Tampered"
+            });
+
+            var batchAp = await _repository.SubmitRecordsWithBatchAsync(new[] { idAp });
+            Assert.True(batchAp.ContainsKey("AP - RMA"));
+            string expectedBatchAp = $"AEP-{monthYear}-0001";
+            Assert.Equal(expectedBatchAp, batchAp["AP - RMA"]);
+
+            var rAp = await _repository.GetByIdAsync(idAp);
+            Assert.NotNull(rAp);
+            Assert.Equal(expectedBatchAp, rAp.BatchId);
+
+            // Test restoring to Pending clears BatchId
+            int restored = await _repository.UpdateStatusBatchAsync(new[] { id1 }, "Pending");
+            Assert.Equal(1, restored);
+            var r1Restored = await _repository.GetByIdAsync(id1);
+            Assert.NotNull(r1Restored);
+            Assert.Equal("Pending", r1Restored.Status);
+            Assert.True(string.IsNullOrEmpty(r1Restored.BatchId));
+        }
+
+        [Fact]
+        public void ExcelRoundTrip_ExportsAndImportsWithExactSameHeadersAndBatchId()
+        {
+            var excelService = new ExcelService();
+            string tempExcel = Path.Combine(Path.GetTempPath(), $"RDES_Export_{Guid.NewGuid():N}.xlsx");
+
+            try
+            {
+                var originalRecords = new List<DeviceRecord>
+                {
+                    new DeviceRecord
+                    {
+                        Id = 101,
+                        SerialNumber = "EXCEL-TEST-001",
+                        ModuleNumber = "MOD-ABC-99",
+                        OpCo = "OH - RMA",
+                        Defect = "Broken/Cracked LCD",
+                        Status = "Submitted",
+                        BatchId = "AEP-092026-0001",
+                        DeviceCode = "EH006",
+                        ManufacturerCode = "1N",
+                        Catalog = "CAT-777",
+                        CreatedBy = "TestOperator",
+                        MachineName = "TEST-PC",
+                        Notes = "Important round-trip notes"
+                    }
+                };
+
+                excelService.ExportToExcel(originalRecords, tempExcel);
+                Assert.True(File.Exists(tempExcel));
+
+                var importedRecords = excelService.ImportFromSpreadsheet(tempExcel, "Device Records");
+                Assert.Single(importedRecords);
+
+                var imp = importedRecords[0];
+                Assert.Equal("EXCEL-TEST-001", imp.SerialNumber);
+                Assert.Equal("MOD-ABC-99", imp.ModuleNumber);
+                Assert.Equal("OH - RMA", imp.OpCo);
+                Assert.Equal("Broken/Cracked LCD", imp.Defect);
+                Assert.Equal("Submitted", imp.Status);
+                Assert.Equal("AEP-092026-0001", imp.BatchId);
+                Assert.Equal("EH006", imp.DeviceCode);
+                Assert.Equal("1N", imp.ManufacturerCode);
+                Assert.Equal("CAT-777", imp.Catalog);
+                Assert.Equal("TestOperator", imp.CreatedBy);
+                Assert.Equal("TEST-PC", imp.MachineName);
+                Assert.Equal("Important round-trip notes", imp.Notes);
+            }
+            finally
+            {
+                if (File.Exists(tempExcel)) File.Delete(tempExcel);
+            }
+        }
     }
 }

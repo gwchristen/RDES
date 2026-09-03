@@ -324,6 +324,7 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Batch ID" Binding="{Binding BatchId}" FontWeight="SemiBold" IsReadOnly="True" Width="145"/>
                     <DataGridTextColumn Header="DEV CD" Binding="{Binding DeviceCode}" IsReadOnly="True" Width="85"/>
                     <DataGridTextColumn Header="MFR CD" Binding="{Binding ManufacturerCode}" IsReadOnly="True" Width="90"/>
                     <DataGridTextColumn Header="Catalog #" Binding="{Binding Catalog}" IsReadOnly="True" Width="110"/>

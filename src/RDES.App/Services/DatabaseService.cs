@@ -65,7 +65,6 @@ namespace RDES.App.Services
             // Set SQLite performance & concurrency PRAGMAs for multi-user shared drive access
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                PRAGMA journal_mode = WAL;
                 PRAGMA busy_timeout = 10000;
                 PRAGMA synchronous = NORMAL;
                 PRAGMA foreign_keys = ON;
@@ -82,7 +81,6 @@ namespace RDES.App.Services
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                PRAGMA journal_mode = WAL;
                 PRAGMA busy_timeout = 10000;
                 PRAGMA synchronous = NORMAL;
                 PRAGMA foreign_keys = ON;
@@ -128,6 +126,13 @@ namespace RDES.App.Services
 
                 using var conn = await CreateConnectionAsync();
 
+                // Set database-level WAL journal mode once during initialization
+                using (var pragmaCmd = conn.CreateCommand())
+                {
+                    pragmaCmd.CommandText = "PRAGMA journal_mode = WAL;";
+                    await pragmaCmd.ExecuteNonQueryAsync();
+                }
+
                 string createTablesSql = @"
                     CREATE TABLE IF NOT EXISTS DeviceRecords (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,6 +150,7 @@ namespace RDES.App.Services
                         Catalog TEXT,
                         FileNumber TEXT,
                         Status TEXT NOT NULL DEFAULT 'Pending',
+                        BatchId TEXT,
                         OpCo TEXT NOT NULL DEFAULT 'OH - RMA',
                         AclaraSerialStart TEXT,
                         AclaraSerialEnd TEXT,
@@ -164,6 +170,7 @@ namespace RDES.App.Services
 
                     CREATE INDEX IF NOT EXISTS idx_records_serial ON DeviceRecords (SerialNumber);
                     CREATE INDEX IF NOT EXISTS idx_records_status ON DeviceRecords (Status);
+                    CREATE INDEX IF NOT EXISTS idx_records_batch ON DeviceRecords (BatchId);
                     CREATE INDEX IF NOT EXISTS idx_records_opco ON DeviceRecords (OpCo);
                     CREATE INDEX IF NOT EXISTS idx_records_created ON DeviceRecords (CreatedAt);
                     CREATE INDEX IF NOT EXISTS idx_records_defect ON DeviceRecords (Defect);
@@ -196,6 +203,16 @@ namespace RDES.App.Services
                 ";
 
                 await conn.ExecuteAsync(createTablesSql);
+
+                // Run migration for existing databases missing BatchId column
+                try
+                {
+                    await conn.ExecuteAsync("ALTER TABLE DeviceRecords ADD COLUMN BatchId TEXT;");
+                }
+                catch
+                {
+                    // Column already exists
+                }
 
                 // Seed default catalog options if empty
                 await SeedInitialDataAsync(conn);

@@ -296,10 +296,11 @@ namespace RDES.App.ViewModels
                 return;
             }
 
-            int count = await _repository.UpdateStatusBatchAsync(ids, "Submitted");
-            if (count > 0)
+            var batchMap = await _repository.SubmitRecordsWithBatchAsync(ids);
+            if (batchMap.Count > 0)
             {
-                StatusMessage = $"✅ Successfully marked {count} record(s) as Submitted and cleared from active view.";
+                string batchSummary = string.Join(", ", batchMap.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
+                StatusMessage = $"✅ Successfully submitted {ids.Count} record(s) under Batch [{batchSummary}]!";
                 await SearchAsync();
             }
         }
@@ -320,9 +321,13 @@ namespace RDES.App.ViewModels
                 return;
             }
 
-            int count = await _repository.UpdateStatusBatchAsync(pendingIds, "Submitted");
-            StatusMessage = $"✅ Successfully marked {count} record(s) as Submitted and cleared from active view.";
-            await SearchAsync();
+            var batchMap = await _repository.SubmitRecordsWithBatchAsync(pendingIds);
+            if (batchMap.Count > 0)
+            {
+                string batchSummary = string.Join(", ", batchMap.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
+                StatusMessage = $"✅ Successfully submitted {pendingIds.Count} record(s) under Batch [{batchSummary}]!";
+                await SearchAsync();
+            }
         }
 
         [RelayCommand]

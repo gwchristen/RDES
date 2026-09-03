@@ -21,6 +21,7 @@ namespace RDES.App.Models
         private string _catalog = string.Empty;
         private string _fileNumber = string.Empty;
         private string _status = "Pending";
+        private string _batchId = string.Empty;
         private string _opCo = "OH - RMA";
         private string _aclaraSerialStart = string.Empty;
         private string _aclaraSerialEnd = string.Empty;
@@ -132,6 +133,12 @@ namespace RDES.App.Models
         {
             get => _status;
             set => SetField(ref _status, value?.Trim() ?? "Pending");
+        }
+
+        public string BatchId
+        {
+            get => _batchId;
+            set => SetField(ref _batchId, value?.Trim() ?? string.Empty);
         }
 
         public string OpCo

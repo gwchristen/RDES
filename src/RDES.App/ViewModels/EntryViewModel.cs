@@ -260,6 +260,28 @@ namespace RDES.App.ViewModels
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(DeviceCode))
+            {
+                StatusMessage = "Device Code (DEV CD) is required.";
+                IsSuccessMessage = false;
+                return;
+            }
+
+            // Prevent duplicate serial numbers
+            var existingDuplicate = await _repository.GetBySerialNumberAsync(SerialNumber.Trim());
+            if (existingDuplicate != null)
+            {
+                if (!IsEditMode || existingDuplicate.Id != CurrentRecordId)
+                {
+                    ExistingDuplicateRecord = existingDuplicate;
+                    HasDuplicateWarning = true;
+                    DuplicateWarning = $"⚠️ Duplicate Serial: '{SerialNumber.Trim()}' already exists (ID: {existingDuplicate.Id}, OpCo: {existingDuplicate.OpCo}, Status: {existingDuplicate.Status})!";
+                    StatusMessage = $"⛔ Cannot save: Serial '{SerialNumber.Trim()}' already exists in database!";
+                    IsSuccessMessage = false;
+                    return;
+                }
+            }
+
             IsBusy = true;
             try
             {

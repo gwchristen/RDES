@@ -36,14 +36,16 @@
                                VerticalAlignment="Center"/>
                 </DockPanel>
 
-                <!-- File Picker Row -->
+                <!-- File Picker Row with Target OpCo Selector -->
                 <Grid Grid.Row="1" Margin="0,0,0,14">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="20"/>
-                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="15"/>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition Width="15"/>
+                        <ColumnDefinition Width="160"/>
                     </Grid.ColumnDefinitions>
 
                     <TextBox Grid.Column="0" 
@@ -66,6 +68,16 @@
                                   SelectedItem="{Binding SelectedSheet}" 
                                   Height="32" 
                                   VerticalContentAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="6">
+                        <TextBlock Text="Target OpCo *:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,2"/>
+                        <ComboBox ItemsSource="{Binding OpCoList}" 
+                                  SelectedItem="{Binding SelectedOpCo}" 
+                                  Height="32" 
+                                  FontWeight="Bold"
+                                  VerticalContentAlignment="Center"
+                                  ToolTip="All imported records will be assigned to this Operating Company"/>
                     </StackPanel>
                 </Grid>
 
