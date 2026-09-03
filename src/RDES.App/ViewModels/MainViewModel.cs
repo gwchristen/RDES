@@ -21,6 +21,7 @@ namespace RDES.App.ViewModels
         public StatisticsViewModel StatisticsVM { get; }
         public BulkImportViewModel BulkImportVM { get; }
         public SettingsViewModel SettingsVM { get; }
+        public ModemDashboardViewModel ModemDashboardVM { get; }
 
         [ObservableProperty]
         private int _selectedTabIndex = 0;
@@ -87,11 +88,20 @@ namespace RDES.App.ViewModels
             _repository = new DeviceRepository(_databaseService);
             _excelService = new ExcelService();
 
+            var modemCommunicator = new ModemCommunicator();
+            var backoffPolicy = new ExponentialBackoffPolicy();
+            var incidentLogService = new IncidentLogService(_databaseService);
+            var recoveryService = new ModemRecoveryService(modemCommunicator, backoffPolicy, incidentLogService);
+            var watchdogService = new ModemWatchdogService(modemCommunicator, recoveryService, incidentLogService);
+            var soakTestService = new ModemSoakTestService(modemCommunicator, backoffPolicy, recoveryService, watchdogService, incidentLogService);
+            var batchSessionService = new BatchSessionService(_databaseService, incidentLogService);
+
             EntryVM = new EntryViewModel(_repository, _configService);
             RecordsVM = new RecordsViewModel(_repository, _excelService, _configService);
             StatisticsVM = new StatisticsViewModel(_repository, _excelService, _configService);
             BulkImportVM = new BulkImportViewModel(_repository, _excelService, _configService);
             SettingsVM = new SettingsViewModel(_configService, _databaseService, _repository);
+            ModemDashboardVM = new ModemDashboardViewModel(modemCommunicator, backoffPolicy, recoveryService, watchdogService, soakTestService, batchSessionService, incidentLogService);
 
             _currentViewModel = EntryVM;
             DatabasePath = _databaseService.DatabasePath;
@@ -140,6 +150,7 @@ namespace RDES.App.ViewModels
                 2 => StatisticsVM,
                 3 => BulkImportVM,
                 4 => SettingsVM,
+                5 => ModemDashboardVM,
                 _ => EntryVM
             };
 
@@ -151,6 +162,10 @@ namespace RDES.App.ViewModels
             {
                 _ = StatisticsVM.RefreshStatisticsAsync();
             }
+            else if (value == 5)
+            {
+                _ = ModemDashboardVM.InitializeAsync();
+            }
         }
 
         public async Task InitializeAsync()
@@ -159,6 +174,7 @@ namespace RDES.App.ViewModels
             await EntryVM.InitializeAsync();
             await RecordsVM.InitializeAsync();
             await StatisticsVM.InitializeAsync();
+            await ModemDashboardVM.InitializeAsync();
             await RefreshStatsAsync();
         }
 

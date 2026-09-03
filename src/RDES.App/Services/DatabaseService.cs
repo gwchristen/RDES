@@ -193,6 +193,51 @@ namespace RDES.App.Services
                         MachineName TEXT,
                         Timestamp DATETIME NOT NULL
                     );
+
+                    CREATE TABLE IF NOT EXISTS BatchSessions (
+                        Id TEXT PRIMARY KEY,
+                        Name TEXT NOT NULL,
+                        Status TEXT NOT NULL DEFAULT 'Pending',
+                        TotalItems INTEGER NOT NULL DEFAULT 0,
+                        ProcessedItems INTEGER NOT NULL DEFAULT 0,
+                        SuccessCount INTEGER NOT NULL DEFAULT 0,
+                        FailureCount INTEGER NOT NULL DEFAULT 0,
+                        CurrentIndex INTEGER NOT NULL DEFAULT 0,
+                        CreatedAt DATETIME NOT NULL,
+                        UpdatedAt DATETIME NOT NULL,
+                        CompletedAt DATETIME
+                    );
+
+                    CREATE TABLE IF NOT EXISTS BatchSessionItems (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        BatchSessionId TEXT NOT NULL,
+                        ItemIndex INTEGER NOT NULL,
+                        SerialNumber TEXT NOT NULL,
+                        PayloadJson TEXT,
+                        Status TEXT NOT NULL DEFAULT 'Pending',
+                        ErrorMessage TEXT,
+                        ProcessedAt DATETIME,
+                        RetryCount INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (BatchSessionId) REFERENCES BatchSessions(Id) ON DELETE CASCADE
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_batch_items_session ON BatchSessionItems (BatchSessionId);
+                    CREATE INDEX IF NOT EXISTS idx_batch_items_status ON BatchSessionItems (Status);
+
+                    CREATE TABLE IF NOT EXISTS ModemIncidentLogs (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        SessionId TEXT,
+                        Timestamp DATETIME NOT NULL,
+                        Severity TEXT NOT NULL DEFAULT 'Info',
+                        EventType TEXT NOT NULL DEFAULT 'General',
+                        Message TEXT NOT NULL,
+                        PortName TEXT,
+                        ExceptionDetails TEXT,
+                        MetadataJson TEXT
+                    );
+
+                    CREATE INDEX IF NOT EXISTS idx_incidents_timestamp ON ModemIncidentLogs (Timestamp);
+                    CREATE INDEX IF NOT EXISTS idx_incidents_severity ON ModemIncidentLogs (Severity);
                 ";
 
                 await conn.ExecuteAsync(createTablesSql);

@@ -146,6 +146,13 @@
                                  Command="{Binding NavigateToCommand}"
                                  CommandParameter="4"
                                  GroupName="NavTabs"/>
+
+                    <RadioButton Content="📡  Modem &amp; Watchdog" 
+                                 Style="{StaticResource NavTabButton}" 
+                                 IsChecked="{Binding SelectedTabIndex, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=5, Mode=OneWay}"
+                                 Command="{Binding NavigateToCommand}"
+                                 CommandParameter="5"
+                                 GroupName="NavTabs"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -200,6 +207,9 @@
                     </DataTemplate>
                     <DataTemplate DataType="{x:Type viewmodels:SettingsViewModel}">
                         <views:SettingsView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewmodels:ModemDashboardViewModel}">
+                        <views:ModemDashboardView />
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
